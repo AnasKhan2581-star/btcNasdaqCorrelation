@@ -7,10 +7,10 @@
     <style>
         body { font-family: Arial, sans-serif; text-align: center; background: #121212; color: white; }
         .container { max-width: 700px; margin: auto; padding: 20px; background: #1e1e1e; border-radius: 10px; }
-        button { width: 100%; padding: 10px; font-size: 16px; background: #ff9800; border: none; color: white; cursor: pointer; }
+        input, button { padding: 10px; font-size: 16px; margin: 5px; }
+        button { background: #ff9800; border: none; color: white; cursor: pointer; }
         button:hover { background: #e68900; }
-        #trend { font-size: 24px; margin-top: 20px; }
-        #signal { font-size: 28px; font-weight: bold; margin-top: 20px; }
+        #trend, #signal { font-size: 24px; margin-top: 20px; font-weight: bold; }
         .buy { color: lime; animation: blink 0.5s infinite alternate; }
         .sell { color: red; animation: blink 0.5s infinite alternate; }
         @keyframes blink { from { opacity: 1; } to { opacity: 0.5; } }
@@ -20,34 +20,26 @@
 </head>
 <body>
     <div class="container">
-        <h1>Smart Money Concept (SMC) Bot</h1>
+        <h1>SMC Trading Bot</h1>
+        <input type="text" id="coinPair" placeholder="Enter coin pair (e.g., BTCUSDT)">
         <button onclick="startBot()">Start Bot</button>
-        <p id="trend">Trend: Analyzing...</p>
-        <p id="signal">Waiting for a signal...</p>
+        <p id="trend">Trend: Waiting...</p>
+        <p id="signal">Signal: Waiting...</p>
         <h2>Order Blocks & Imbalances</h2>
         <table>
             <thead>
-                <tr>
-                    <th>Time</th>
-                    <th>Type</th>
-                    <th>Price</th>
-                </tr>
+                <tr><th>Time</th><th>Type</th><th>Price</th></tr>
             </thead>
             <tbody id="order-blocks"></tbody>
         </table>
     </div>
 
     <script>
-        let prices = [];
-        let trends = [];
-        let orderBlocks = [];
-        const API_WS = "wss://stream.binance.com:9443/ws/btcusdt@kline_1m"; // 1-minute timeframe
+        let prices = [], orderBlocks = [], ws;
 
         function detectTrend() {
             let last20 = prices.slice(-20);
-            let trend = "Sideways";
-
-            if (last20.length < 10) return trend;
+            if (last20.length < 10) return "Sideways";
 
             let higherHighs = 0, lowerLows = 0;
 
@@ -56,10 +48,9 @@
                 if (last20[i] < last20[i - 1]) lowerLows++;
             }
 
-            if (higherHighs > lowerLows) trend = "Uptrend 🔼";
-            else if (lowerLows > higherHighs) trend = "Downtrend 🔽";
-
-            return trend;
+            if (higherHighs > lowerLows) return "Uptrend 🔼";
+            if (lowerLows > higherHighs) return "Downtrend 🔽";
+            return "Sideways";
         }
 
         function detectOrderBlocks() {
@@ -74,34 +65,17 @@
             let bullishBlock = low * 0.99;
             let bearishBlock = high * 1.01;
 
-            // Find last bullish candle before a drop
             if (trend === "Downtrend 🔽" && currentPrice > bearishBlock) {
                 orderBlocks.push({ type: "Sell Order Block", price: bearishBlock });
                 return { signal: "SELL 🚨", class: "sell" };
             }
 
-            // Find last bearish candle before a rise
             if (trend === "Uptrend 🔼" && currentPrice < bullishBlock) {
                 orderBlocks.push({ type: "Buy Order Block", price: bullishBlock });
                 return { signal: "BUY ✅", class: "buy" };
             }
 
             return { signal: "NO SIGNAL", class: "" };
-        }
-
-        function detectImbalances() {
-            if (prices.length < 3) return null;
-
-            let last = prices.length - 1;
-            let prev = last - 1;
-            let beforePrev = last - 2;
-
-            let fvg = Math.abs(prices[prev] - prices[beforePrev]);
-
-            if (fvg > (prices[prev] * 0.002)) { // If FVG > 0.2% of price, it's an imbalance
-                return { price: prices[prev], size: fvg };
-            }
-            return null;
         }
 
         function updateOrderBlocks() {
@@ -112,7 +86,15 @@
         }
 
         function startBot() {
-            let ws = new WebSocket(API_WS);
+            let pair = document.getElementById("coinPair").value.trim().toLowerCase();
+            if (!pair) {
+                alert("Please enter a valid coin pair (e.g., BTCUSDT)");
+                return;
+            }
+
+            if (ws) ws.close();  // Close previous connection
+
+            ws = new WebSocket(`wss://stream.binance.com:9443/ws/${pair}@kline_1m`);
 
             ws.onmessage = event => {
                 let data = JSON.parse(event.data);
@@ -125,17 +107,13 @@
 
                 if (prices.length >= 30) {
                     let { signal, class: signalClass } = detectOrderBlocks();
-                    document.getElementById("signal").innerText = signal;
+                    document.getElementById("signal").innerText = `Signal: ${signal}`;
                     document.getElementById("signal").className = signalClass;
-
-                    let imbalance = detectImbalances();
-                    if (imbalance) {
-                        orderBlocks.push({ type: "Fair Value Gap", price: imbalance.price });
-                    }
-
                     updateOrderBlocks();
                 }
             };
+
+            ws.onerror = () => alert("Error connecting to Binance. Check coin pair!");
         }
     </script>
 </body>
