@@ -6,14 +6,16 @@
     <title>SMC Trading Bot</title>
     <style>
         body { font-family: Arial, sans-serif; text-align: center; background: #121212; color: white; }
-        .container { max-width: 700px; margin: auto; padding: 20px; background: #1e1e1e; border-radius: 10px; }
-        input, button { padding: 10px; font-size: 16px; margin: 5px; }
+        .container { max-width: 700px; margin: auto; padding: 20px; background: #1e1e1e; border-radius: 10px; padding: 20px; }
+        input, select, button { padding: 10px; font-size: 16px; margin: 5px; }
         button { background: #ff9800; border: none; color: white; cursor: pointer; }
         button:hover { background: #e68900; }
         #trend, #signal { font-size: 24px; margin-top: 20px; font-weight: bold; }
         .buy { color: lime; animation: blink 0.5s infinite alternate; }
         .sell { color: red; animation: blink 0.5s infinite alternate; }
         @keyframes blink { from { opacity: 1; } to { opacity: 0.5; } }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+        .loader { border: 4px solid white; border-radius: 50%; border-top: 4px solid #ff9800; width: 30px; height: 30px; margin: 10px auto; animation: spin 1s linear infinite; }
         table { width: 100%; margin-top: 20px; border-collapse: collapse; }
         th, td { border: 1px solid white; padding: 8px; text-align: center; }
     </style>
@@ -22,7 +24,14 @@
     <div class="container">
         <h1>SMC Trading Bot</h1>
         <input type="text" id="coinPair" placeholder="Enter coin pair (e.g., BTCUSDT)">
+        <select id="timeframe">
+            <option value="1m">1m</option>
+            <option value="5m">5m</option>
+            <option value="15m">15m</option>
+            <option value="1h">1h</option>
+        </select>
         <button onclick="startBot()">Start Bot</button>
+        <div id="loading" class="loader"></div>
         <p id="trend">Trend: Waiting...</p>
         <p id="signal">Signal: Waiting...</p>
         <h2>Order Blocks & Imbalances</h2>
@@ -38,18 +47,18 @@
         let prices = [], orderBlocks = [], ws;
 
         function detectTrend() {
-            let last20 = prices.slice(-20);
-            if (last20.length < 10) return "Sideways";
+            if (prices.length < 20) return "Sideways";
 
+            let ema = prices.reduce((a, b) => a + b, 0) / prices.length;
             let higherHighs = 0, lowerLows = 0;
 
-            for (let i = 1; i < last20.length; i++) {
-                if (last20[i] > last20[i - 1]) higherHighs++;
-                if (last20[i] < last20[i - 1]) lowerLows++;
+            for (let i = 1; i < prices.length; i++) {
+                if (prices[i] > prices[i - 1]) higherHighs++;
+                if (prices[i] < prices[i - 1]) lowerLows++;
             }
 
-            if (higherHighs > lowerLows) return "Uptrend 🔼";
-            if (lowerLows > higherHighs) return "Downtrend 🔽";
+            if (higherHighs > lowerLows && prices[prices.length - 1] > ema) return "Uptrend 🔼";
+            if (lowerLows > higherHighs && prices[prices.length - 1] < ema) return "Downtrend 🔽";
             return "Sideways";
         }
 
@@ -87,6 +96,7 @@
 
         function startBot() {
             let pair = document.getElementById("coinPair").value.trim().toLowerCase();
+            let timeframe = document.getElementById("timeframe").value;
             if (!pair) {
                 alert("Please enter a valid coin pair (e.g., BTCUSDT)");
                 return;
@@ -94,7 +104,8 @@
 
             if (ws) ws.close();  // Close previous connection
 
-            ws = new WebSocket(`wss://stream.binance.com:9443/ws/${pair}@kline_1m`);
+            document.getElementById("loading").style.display = "block"; // Show loading spinner
+            ws = new WebSocket(`wss://stream.binance.com:9443/ws/${pair}@kline_${timeframe}`);
 
             ws.onmessage = event => {
                 let data = JSON.parse(event.data);
@@ -111,9 +122,14 @@
                     document.getElementById("signal").className = signalClass;
                     updateOrderBlocks();
                 }
+
+                document.getElementById("loading").style.display = "none"; // Hide spinner after loading
             };
 
-            ws.onerror = () => alert("Error connecting to Binance. Check coin pair!");
+            ws.onerror = () => {
+                alert("Error connecting to Binance. Check coin pair!");
+                document.getElementById("loading").style.display = "none";
+            };
         }
     </script>
 </body>
