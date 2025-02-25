@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SMC Trading Bot</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; background: #121212; color: white; }
+        .container { max-width: 700px; margin: auto; padding: 20px; background: #1e1e1e; border-radius: 10px; }
+        button { width: 100%; padding: 10px; font-size: 16px; background: #ff9800; border: none; color: white; cursor: pointer; }
+        button:hover { background: #e68900; }
+        #trend { font-size: 24px; margin-top: 20px; }
+        #signal { font-size: 28px; font-weight: bold; margin-top: 20px; }
+        .buy { color: lime; animation: blink 0.5s infinite alternate; }
+        .sell { color: red; animation: blink 0.5s infinite alternate; }
+        @keyframes blink { from { opacity: 1; } to { opacity: 0.5; } }
+        table { width: 100%; margin-top: 20px; border-collapse: collapse; }
+        th, td { border: 1px solid white; padding: 8px; text-align: center; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Smart Money Concept (SMC) Bot</h1>
+        <button onclick="startBot()">Start Bot</button>
+        <p id="trend">Trend: Analyzing...</p>
+        <p id="signal">Waiting for a signal...</p>
+        <h2>Order Blocks & Imbalances</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Time</th>
+                    <th>Type</th>
+                    <th>Price</th>
+                </tr>
+            </thead>
+            <tbody id="order-blocks"></tbody>
+        </table>
+    </div>
+
+    <script>
+        let prices = [];
+        let trends = [];
+        let orderBlocks = [];
+        const API_WS = "wss://stream.binance.com:9443/ws/btcusdt@kline_1m"; // 1-minute timeframe
+
+        function detectTrend() {
+            let last20 = prices.slice(-20);
+            let trend = "Sideways";
+
+            if (last20.length < 10) return trend;
+
+            let higherHighs = 0, lowerLows = 0;
+
+            for (let i = 1; i < last20.length; i++) {
+                if (last20[i] > last20[i - 1]) higherHighs++;
+                if (last20[i] < last20[i - 1]) lowerLows++;
+            }
+
+            if (higherHighs > lowerLows) trend = "Uptrend 🔼";
+            else if (lowerLows > higherHighs) trend = "Downtrend 🔽";
+
+            return trend;
+        }
+
+        function detectOrderBlocks() {
+            if (prices.length < 30) return { signal: "NO SIGNAL", class: "" };
+
+            let trend = detectTrend();
+            let last30 = prices.slice(-30);
+            let high = Math.max(...last30);
+            let low = Math.min(...last30);
+            let currentPrice = prices[prices.length - 1];
+
+            let bullishBlock = low * 0.99;
+            let bearishBlock = high * 1.01;
+
+            // Find last bullish candle before a drop
+            if (trend === "Downtrend 🔽" && currentPrice > bearishBlock) {
+                orderBlocks.push({ type: "Sell Order Block", price: bearishBlock });
+                return { signal: "SELL 🚨", class: "sell" };
+            }
+
+            // Find last bearish candle before a rise
+            if (trend === "Uptrend 🔼" && currentPrice < bullishBlock) {
+                orderBlocks.push({ type: "Buy Order Block", price: bullishBlock });
+                return { signal: "BUY ✅", class: "buy" };
+            }
+
+            return { signal: "NO SIGNAL", class: "" };
+        }
+
+        function detectImbalances() {
+            if (prices.length < 3) return null;
+
+            let last = prices.length - 1;
+            let prev = last - 1;
+            let beforePrev = last - 2;
+
+            let fvg = Math.abs(prices[prev] - prices[beforePrev]);
+
+            if (fvg > (prices[prev] * 0.002)) { // If FVG > 0.2% of price, it's an imbalance
+                return { price: prices[prev], size: fvg };
+            }
+            return null;
+        }
+
+        function updateOrderBlocks() {
+            let table = document.getElementById("order-blocks");
+            table.innerHTML = orderBlocks.map(block => 
+                `<tr><td>${new Date().toLocaleTimeString()}</td><td>${block.type}</td><td>${block.price.toFixed(2)}</td></tr>`
+            ).join("");
+        }
+
+        function startBot() {
+            let ws = new WebSocket(API_WS);
+
+            ws.onmessage = event => {
+                let data = JSON.parse(event.data);
+                let closePrice = parseFloat(data.k.c);
+                prices.push(closePrice);
+                if (prices.length > 100) prices.shift();
+
+                let trend = detectTrend();
+                document.getElementById("trend").innerText = `Trend: ${trend}`;
+
+                if (prices.length >= 30) {
+                    let { signal, class: signalClass } = detectOrderBlocks();
+                    document.getElementById("signal").innerText = signal;
+                    document.getElementById("signal").className = signalClass;
+
+                    let imbalance = detectImbalances();
+                    if (imbalance) {
+                        orderBlocks.push({ type: "Fair Value Gap", price: imbalance.price });
+                    }
+
+                    updateOrderBlocks();
+                }
+            };
+        }
+    </script>
+</body>
+</html>
