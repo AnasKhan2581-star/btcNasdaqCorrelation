@@ -1,136 +1,206 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SMC Trading Bot</title>
-    <style>
-        body { font-family: Arial, sans-serif; text-align: center; background: #121212; color: white; }
-        .container { max-width: 700px; margin: auto; padding: 20px; background: #1e1e1e; border-radius: 10px; padding: 20px; }
-        input, select, button { padding: 10px; font-size: 16px; margin: 5px; }
-        button { background: #ff9800; border: none; color: white; cursor: pointer; }
-        button:hover { background: #e68900; }
-        #trend, #signal { font-size: 24px; margin-top: 20px; font-weight: bold; }
-        .buy { color: lime; animation: blink 0.5s infinite alternate; }
-        .sell { color: red; animation: blink 0.5s infinite alternate; }
-        @keyframes blink { from { opacity: 1; } to { opacity: 0.5; } }
-        @keyframes spin { 100% { transform: rotate(360deg); } }
-        .loader { border: 4px solid white; border-radius: 50%; border-top: 4px solid #ff9800; width: 30px; height: 30px; margin: 10px auto; animation: spin 1s linear infinite; }
-        table { width: 100%; margin-top: 20px; border-collapse: collapse; }
-        th, td { border: 1px solid white; padding: 8px; text-align: center; }
-    </style>
+  <meta charset="UTF-8">
+  <title>BTC vs Nasdaq Correlation Analyzer</title>
+  <style>
+    body {
+      background-color: #000;
+      color: #fff;
+      font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+      margin: 40px;
+    }
+    h1 {
+      text-align: center;
+      color: #fff;
+    }
+    form {
+      max-width: 500px;
+      margin: 20px auto;
+      background-color: #111;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 0 10px #333;
+    }
+    label {
+      display: block;
+      margin: 15px 0 5px;
+      font-weight: bold;
+    }
+    input, select {
+      width: 100%;
+      padding: 10px;
+      box-sizing: border-box;
+      border: none;
+      border-radius: 4px;
+      background-color: #222;
+      color: #fff;
+    }
+    button {
+      margin-top: 20px;
+      width: 100%;
+      padding: 10px;
+      font-size: 16px;
+      background-color: #fff;
+      color: #000;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #ddd;
+    }
+    #result {
+      max-width: 500px;
+      margin: 20px auto;
+      background-color: #111;
+      padding: 15px;
+      border-radius: 8px;
+      box-shadow: 0 0 10px #333;
+    }
+    .error {
+      color: #f88;
+    }
+  </style>
 </head>
 <body>
-    <div class="container">
-        <h1>SMC Trading Bot</h1>
-        <input type="text" id="coinPair" placeholder="Enter coin pair (e.g., BTCUSDT)">
-        <select id="timeframe">
-            <option value="1m">1m</option>
-            <option value="5m">5m</option>
-            <option value="15m">15m</option>
-            <option value="1h">1h</option>
-        </select>
-        <button onclick="startBot()">Start Bot</button>
-        <div id="loading" class="loader"></div>
-        <p id="trend">Trend: Waiting...</p>
-        <p id="signal">Signal: Waiting...</p>
-        <h2>Order Blocks & Imbalances</h2>
-        <table>
-            <thead>
-                <tr><th>Time</th><th>Type</th><th>Price</th></tr>
-            </thead>
-            <tbody id="order-blocks"></tbody>
-        </table>
-    </div>
+  <h1>BTC vs Nasdaq Correlation Analyzer</h1>
+  <form id="analyzer">
+    <label for="timeframe">Candle Time Frame:</label>
+    <select id="timeframe" required>
+      <option value="1m">1 Minute</option>
+      <option value="3m">3 Minutes</option>
+      <option value="5m">5 Minutes</option>
+      <option value="15m" selected>15 Minutes</option>
+      <option value="30m">30 Minutes</option>
+      <option value="1h">1 Hour</option>
+      <option value="2h">2 Hours</option>
+      <option value="4h">4 Hours</option>
+      <option value="6h">6 Hours</option>
+      <option value="8h">8 Hours</option>
+      <option value="12h">12 Hours</option>
+      <option value="1d">1 Day</option>
+      <option value="1w">1 Week</option>
+      <option value="1M">1 Month</option>
+    </select>
 
-    <script>
-        let prices = [], orderBlocks = [], ws;
+    <label for="numCandles">Number of Candles to Analyze (desired):</label>
+    <input type="number" id="numCandles" value="10" min="2" required>
 
-        function detectTrend() {
-            if (prices.length < 20) return "Sideways";
+    <label for="delay">Delay for BTC (in number of candles):</label>
+    <input type="number" id="delay" value="2" min="0" required>
 
-            let ema = prices.reduce((a, b) => a + b, 0) / prices.length;
-            let higherHighs = 0, lowerLows = 0;
+    <button type="submit">Analyze</button>
+  </form>
 
-            for (let i = 1; i < prices.length; i++) {
-                if (prices[i] > prices[i - 1]) higherHighs++;
-                if (prices[i] < prices[i - 1]) lowerLows++;
-            }
+  <div id="result"></div>
 
-            if (higherHighs > lowerLows && prices[prices.length - 1] > ema) return "Uptrend 🔼";
-            if (lowerLows > higherHighs && prices[prices.length - 1] < ema) return "Downtrend 🔽";
-            return "Sideways";
+  <script>
+    // Calculate Pearson correlation coefficient between two arrays
+    function pearsonCorrelation(x, y) {
+      const n = x.length;
+      const meanX = x.reduce((sum, val) => sum + val, 0) / n;
+      const meanY = y.reduce((sum, val) => sum + val, 0) / n;
+      let num = 0, denomX = 0, denomY = 0;
+      for (let i = 0; i < n; i++) {
+        const diffX = x[i] - meanX;
+        const diffY = y[i] - meanY;
+        num += diffX * diffY;
+        denomX += diffX * diffX;
+        denomY += diffY * diffY;
+      }
+      return num / Math.sqrt(denomX * denomY);
+    }
+
+    // Fetch BTC candlestick data from Binance API
+    async function fetchBTCCandles(timeframe, limit) {
+      const url = `https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=${timeframe}&limit=${limit}`;
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error("Error fetching BTC data.");
+      }
+      const data = await response.json();
+      // Use the close price from each candle (element at index 4)
+      return data.map(candle => parseFloat(candle[4]));
+    }
+
+    // Convert timeframe to minutes for Yahoo Finance request.
+    // Handles: m, h, d. For w (weeks) and M (months) we use approximations.
+    function timeframeToMinutes(timeframe) {
+      if (timeframe.endsWith("m")) {
+        return parseInt(timeframe);
+      } else if (timeframe.endsWith("h")) {
+        return parseInt(timeframe) * 60;
+      } else if (timeframe.endsWith("d")) {
+        return parseInt(timeframe) * 1440;
+      } else if (timeframe.endsWith("w")) {
+        return parseInt(timeframe) * 10080; // 7 * 1440
+      } else if (timeframe.endsWith("M")) {
+        return parseInt(timeframe) * 43200; // Approx. 30 days
+      } else {
+        throw new Error("Unsupported timeframe format. Use m, h, d, w, or M.");
+      }
+    }
+
+    // Fetch Nasdaq data using QQQ as a proxy via Yahoo Finance.
+    // Uses the free AllOrigins proxy to bypass CORS issues.
+    async function fetchNasdaqCandles(timeframe, limit) {
+      const intervalMinutes = timeframeToMinutes(timeframe);
+      const yahooUrl = `https://query1.finance.yahoo.com/v8/finance/chart/QQQ?interval=${intervalMinutes}m&range=60d`;
+      // Use AllOrigins proxy to bypass CORS restrictions
+      const proxyUrl = `https://api.allorigins.hexocode.repl.co/get?disableCache=true&url=${encodeURIComponent(yahooUrl)}`;
+      const response = await fetch(proxyUrl);
+      if (!response.ok) {
+        throw new Error("Error fetching Nasdaq data from Yahoo Finance.");
+      }
+      const jsonWrapper = await response.json();
+      const json = JSON.parse(jsonWrapper.contents);
+      const result = json.chart.result[0];
+      let closes = result.indicators.quote[0].close;
+      // If available candles exceed the desired limit, slice to the last 'limit' candles.
+      if (closes.length > limit) {
+        closes = closes.slice(-limit);
+      }
+      return closes;
+    }
+
+    document.getElementById("analyzer").addEventListener("submit", async function(e) {
+      e.preventDefault();
+      const timeframe = document.getElementById("timeframe").value.trim();
+      const desiredNumCandles = parseInt(document.getElementById("numCandles").value);
+      const delay = parseInt(document.getElementById("delay").value);
+      const resultDiv = document.getElementById("result");
+      resultDiv.innerHTML = "Fetching data and analyzing...";
+
+      try {
+        // For Nasdaq, fetch exactly the desired number of candles.
+        const nasdaqData = await fetchNasdaqCandles(timeframe, desiredNumCandles);
+        // For BTC, fetch candles as available (simulate the case where you only get desiredNumCandles candles)
+        const btcData = await fetchBTCCandles(timeframe, desiredNumCandles);
+        
+        // Calculate effective number of pairs available after applying delay
+        const effectivePairs = Math.min(nasdaqData.length, btcData.length - delay);
+        if(effectivePairs <= 0) {
+          throw new Error("Not enough BTC data available for the specified delay.");
         }
 
-        function detectOrderBlocks() {
-            if (prices.length < 30) return { signal: "NO SIGNAL", class: "" };
+        // Adjust data arrays to effective length
+        const nasdaqEffective = nasdaqData.slice(0, effectivePairs);
+        const btcEffectiveDelayed = btcData.slice(delay, delay + effectivePairs);
 
-            let trend = detectTrend();
-            let last30 = prices.slice(-30);
-            let high = Math.max(...last30);
-            let low = Math.min(...last30);
-            let currentPrice = prices[prices.length - 1];
-
-            let bullishBlock = low * 0.99;
-            let bearishBlock = high * 1.01;
-
-            if (trend === "Downtrend 🔽" && currentPrice > bearishBlock) {
-                orderBlocks.push({ type: "Sell Order Block", price: bearishBlock });
-                return { signal: "SELL 🚨", class: "sell" };
-            }
-
-            if (trend === "Uptrend 🔼" && currentPrice < bullishBlock) {
-                orderBlocks.push({ type: "Buy Order Block", price: bullishBlock });
-                return { signal: "BUY ✅", class: "buy" };
-            }
-
-            return { signal: "NO SIGNAL", class: "" };
-        }
-
-        function updateOrderBlocks() {
-            let table = document.getElementById("order-blocks");
-            table.innerHTML = orderBlocks.map(block => 
-                `<tr><td>${new Date().toLocaleTimeString()}</td><td>${block.type}</td><td>${block.price.toFixed(2)}</td></tr>`
-            ).join("");
-        }
-
-        function startBot() {
-            let pair = document.getElementById("coinPair").value.trim().toLowerCase();
-            let timeframe = document.getElementById("timeframe").value;
-            if (!pair) {
-                alert("Please enter a valid coin pair (e.g., BTCUSDT)");
-                return;
-            }
-
-            if (ws) ws.close();  // Close previous connection
-
-            document.getElementById("loading").style.display = "block"; // Show loading spinner
-            ws = new WebSocket(`wss://stream.binance.com:9443/ws/${pair}@kline_${timeframe}`);
-
-            ws.onmessage = event => {
-                let data = JSON.parse(event.data);
-                let closePrice = parseFloat(data.k.c);
-                prices.push(closePrice);
-                if (prices.length > 100) prices.shift();
-
-                let trend = detectTrend();
-                document.getElementById("trend").innerText = `Trend: ${trend}`;
-
-                if (prices.length >= 30) {
-                    let { signal, class: signalClass } = detectOrderBlocks();
-                    document.getElementById("signal").innerText = `Signal: ${signal}`;
-                    document.getElementById("signal").className = signalClass;
-                    updateOrderBlocks();
-                }
-
-                document.getElementById("loading").style.display = "none"; // Hide spinner after loading
-            };
-
-            ws.onerror = () => {
-                alert("Error connecting to Binance. Check coin pair!");
-                document.getElementById("loading").style.display = "none";
-            };
-        }
-    </script>
+        // Calculate Pearson correlation coefficient on the effective dataset
+        const correlation = pearsonCorrelation(nasdaqEffective, btcEffectiveDelayed);
+        resultDiv.innerHTML = `<h3>Correlation Analysis Result</h3>
+          <p><strong>Timeframe:</strong> ${timeframe}</p>
+          <p><strong>Desired Candles:</strong> ${desiredNumCandles}</p>
+          <p><strong>BTC Delay:</strong> ${delay} candles</p>
+          <p><strong>Effective Data Pairs Used:</strong> ${effectivePairs}</p>
+          <p><strong>Pearson Correlation Coefficient:</strong> ${correlation.toFixed(4)}</p>
+          <p>${correlation >= 0 ? "Positive correlation" : "Negative correlation"}</p>`;
+      } catch (error) {
+        resultDiv.innerHTML = `<p class="error">Error: ${error.message}</p>`;
+      }
+    });
+  </script>
 </body>
 </html>
