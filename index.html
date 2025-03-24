@@ -120,7 +120,7 @@
         throw new Error("Error fetching BTC data.");
       }
       const data = await response.json();
-      // Use the close price from each candle (element at index 4)
+      // Use the close price from each candle (index 4)
       return data.map(candle => parseFloat(candle[4]));
     }
 
@@ -143,21 +143,19 @@
     }
 
     // Fetch Nasdaq data using QQQ as a proxy via Yahoo Finance.
-    // Uses the free AllOrigins proxy to bypass CORS issues.
+    // Uses Thingproxy (Freeboard) to bypass CORS issues.
     async function fetchNasdaqCandles(timeframe, limit) {
       const intervalMinutes = timeframeToMinutes(timeframe);
       const yahooUrl = `https://query1.finance.yahoo.com/v8/finance/chart/QQQ?interval=${intervalMinutes}m&range=60d`;
-      // Use AllOrigins proxy to bypass CORS restrictions
-      const proxyUrl = `https://api.allorigins.hexocode.repl.co/get?disableCache=true&url=${encodeURIComponent(yahooUrl)}`;
+      // Use Thingproxy to bypass CORS restrictions
+      const proxyUrl = `https://thingproxy.freeboard.io/fetch/${yahooUrl}`;
       const response = await fetch(proxyUrl);
       if (!response.ok) {
         throw new Error("Error fetching Nasdaq data from Yahoo Finance.");
       }
-      const jsonWrapper = await response.json();
-      const json = JSON.parse(jsonWrapper.contents);
+      const json = await response.json();
       const result = json.chart.result[0];
       let closes = result.indicators.quote[0].close;
-      // If available candles exceed the desired limit, slice to the last 'limit' candles.
       if (closes.length > limit) {
         closes = closes.slice(-limit);
       }
@@ -173,18 +171,21 @@
       resultDiv.innerHTML = "Fetching data and analyzing...";
 
       try {
-        // For Nasdaq, fetch exactly the desired number of candles.
+        // Fetch Nasdaq data (desired number of candles)
         const nasdaqData = await fetchNasdaqCandles(timeframe, desiredNumCandles);
-        // For BTC, fetch candles as available (simulate the case where you only get desiredNumCandles candles)
+        // Fetch BTC data. If only desiredNumCandles are available for BTC,
+        // then effective pairs = desiredNumCandles - delay.
         const btcData = await fetchBTCCandles(timeframe, desiredNumCandles);
         
         // Calculate effective number of pairs available after applying delay
         const effectivePairs = Math.min(nasdaqData.length, btcData.length - delay);
-        if(effectivePairs <= 0) {
+        if (effectivePairs <= 0) {
           throw new Error("Not enough BTC data available for the specified delay.");
         }
 
-        // Adjust data arrays to effective length
+        // Adjust data arrays to effective length:
+        // Nasdaq uses first effectivePairs values,
+        // BTC uses values starting from index 'delay' for effectivePairs items.
         const nasdaqEffective = nasdaqData.slice(0, effectivePairs);
         const btcEffectiveDelayed = btcData.slice(delay, delay + effectivePairs);
 
