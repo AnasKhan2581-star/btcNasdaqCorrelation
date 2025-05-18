@@ -57,6 +57,7 @@
             <th style="border: 1px solid #ccc; padding: 8px;">Product</th>
             <th style="border: 1px solid #ccc; padding: 8px;">HSN</th>
             <th style="border: 1px solid #ccc; padding: 8px;">Qty</th>
+            <th style="border: 1px solid #ccc; padding: 8px;">Rate (Incl. GST)</th>
             <th style="border: 1px solid #ccc; padding: 8px;">Taxable Value</th>
             <th style="border: 1px solid #ccc; padding: 8px;">CGST 2.5%</th>
             <th style="border: 1px solid #ccc; padding: 8px;">SGST 2.5%</th>
@@ -104,7 +105,7 @@
 
       table += `
         <tr style="font-weight: bold; background: #f9f9f9;">
-          <td colspan="3" style="border: 1px solid #ccc; padding: 8px; text-align: right;">TOTAL</td>
+          <td colspan="4" style="border: 1px solid #ccc; padding: 8px; text-align: right;">TOTAL</td>
           <td style="border: 1px solid #ccc; padding: 8px; text-align: right;">₹${totalTaxable.toFixed(2)}</td>
           <td style="border: 1px solid #ccc; padding: 8px; text-align: right;">₹${totalCGST.toFixed(2)}</td>
           <td style="border: 1px solid #ccc; padding: 8px; text-align: right;">₹${totalSGST.toFixed(2)}</td>
