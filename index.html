@@ -1,207 +1,208 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>BTC vs Nasdaq Correlation Analyzer</title>
-  <style>
-    body {
-      background-color: #000;
-      color: #fff;
-      font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-      margin: 40px;
-    }
-    h1 {
-      text-align: center;
-      color: #fff;
-    }
-    form {
-      max-width: 500px;
-      margin: 20px auto;
-      background-color: #111;
-      padding: 20px;
-      border-radius: 8px;
-      box-shadow: 0 0 10px #333;
-    }
-    label {
-      display: block;
-      margin: 15px 0 5px;
-      font-weight: bold;
-    }
-    input, select {
-      width: 100%;
-      padding: 10px;
-      box-sizing: border-box;
-      border: none;
-      border-radius: 4px;
-      background-color: #222;
-      color: #fff;
-    }
-    button {
-      margin-top: 20px;
-      width: 100%;
-      padding: 10px;
-      font-size: 16px;
-      background-color: #fff;
-      color: #000;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-    }
-    button:hover {
-      background-color: #ddd;
-    }
-    #result {
-      max-width: 500px;
-      margin: 20px auto;
-      background-color: #111;
-      padding: 15px;
-      border-radius: 8px;
-      box-shadow: 0 0 10px #333;
-    }
-    .error {
-      color: #f88;
-    }
-  </style>
-</head>
-<body>
-  <h1>BTC vs Nasdaq Correlation Analyzer</h1>
-  <form id="analyzer">
-    <label for="timeframe">Candle Time Frame:</label>
-    <select id="timeframe" required>
-      <option value="1m">1 Minute</option>
-      <option value="3m">3 Minutes</option>
-      <option value="5m">5 Minutes</option>
-      <option value="15m" selected>15 Minutes</option>
-      <option value="30m">30 Minutes</option>
-      <option value="1h">1 Hour</option>
-      <option value="2h">2 Hours</option>
-      <option value="4h">4 Hours</option>
-      <option value="6h">6 Hours</option>
-      <option value="8h">8 Hours</option>
-      <option value="12h">12 Hours</option>
-      <option value="1d">1 Day</option>
-      <option value="1w">1 Week</option>
-      <option value="1M">1 Month</option>
-    </select>
-
-    <label for="numCandles">Number of Candles to Analyze (desired):</label>
-    <input type="number" id="numCandles" value="10" min="2" required>
-
-    <label for="delay">Delay for BTC (in number of candles):</label>
-    <input type="number" id="delay" value="2" min="0" required>
-
-    <button type="submit">Analyze</button>
-  </form>
-
-  <div id="result"></div>
-
-  <script>
-    // Calculate Pearson correlation coefficient between two arrays
-    function pearsonCorrelation(x, y) {
-      const n = x.length;
-      const meanX = x.reduce((sum, val) => sum + val, 0) / n;
-      const meanY = y.reduce((sum, val) => sum + val, 0) / n;
-      let num = 0, denomX = 0, denomY = 0;
-      for (let i = 0; i < n; i++) {
-        const diffX = x[i] - meanX;
-        const diffY = y[i] - meanY;
-        num += diffX * diffY;
-        denomX += diffX * diffX;
-        denomY += diffY * diffY;
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Bill Options Generator</title>
+    <style>
+      table {
+        border-collapse: collapse;
+        width: 100%;
+        margin: 20px 0;
       }
-      return num / Math.sqrt(denomX * denomY);
-    }
-
-    // Fetch BTC candlestick data from Binance API
-    async function fetchBTCCandles(timeframe, limit) {
-      const url = `https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=${timeframe}&limit=${limit}`;
-      const response = await fetch(url);
-      if (!response.ok) {
-        throw new Error("Error fetching BTC data.");
+      th, td {
+        border: 1px solid #ddd;
+        text-align: center;
+        padding: 8px;
       }
-      const data = await response.json();
-      // Use the close price from each candle (index 4)
-      return data.map(candle => parseFloat(candle[4]));
-    }
-
-    // Convert timeframe to minutes for Yahoo Finance request.
-    // Handles: m, h, d. For w (weeks) and M (months) we use approximations.
-    function timeframeToMinutes(timeframe) {
-      if (timeframe.endsWith("m")) {
-        return parseInt(timeframe);
-      } else if (timeframe.endsWith("h")) {
-        return parseInt(timeframe) * 60;
-      } else if (timeframe.endsWith("d")) {
-        return parseInt(timeframe) * 1440;
-      } else if (timeframe.endsWith("w")) {
-        return parseInt(timeframe) * 10080; // 7 * 1440
-      } else if (timeframe.endsWith("M")) {
-        return parseInt(timeframe) * 43200; // Approx. 30 days
-      } else {
-        throw new Error("Unsupported timeframe format. Use m, h, d, w, or M.");
+      th {
+        background-color: #f4f4f4;
       }
-    }
-
-    // Fetch Nasdaq data using QQQ as a proxy via Yahoo Finance.
-    // Uses Thingproxy (Freeboard) to bypass CORS issues.
-    async function fetchNasdaqCandles(timeframe, limit) {
-      const intervalMinutes = timeframeToMinutes(timeframe);
-      const yahooUrl = `https://query1.finance.yahoo.com/v8/finance/chart/QQQ?interval=${intervalMinutes}m&range=60d`;
-      // Use Thingproxy to bypass CORS restrictions
-      const proxyUrl = `https://thingproxy.freeboard.io/fetch/${yahooUrl}`;
-      const response = await fetch(proxyUrl);
-      if (!response.ok) {
-        throw new Error("Error fetching Nasdaq data from Yahoo Finance.");
+      .bold {
+        font-weight: bold;
       }
-      const json = await response.json();
-      const result = json.chart.result[0];
-      let closes = result.indicators.quote[0].close;
-      if (closes.length > limit) {
-        closes = closes.slice(-limit);
-      }
-      return closes;
-    }
+    </style>
+  </head>
+  <body>
+    <h1>Bill Options Generator</h1>
+    <label for="total-amount">Grand Total (with GST):</label>
+    <input type="number" id="total-amount" /><br /><br />
+    <label for="splits">Number of Items (Splits):</label>
+    <select id="splits">
+      <option value="2">2</option>
+      <option value="3" selected>3</option>
+      <option value="4">4</option>
+      <option value="5">5</option>
+    </select><br /><br />
+    <button onclick="processBill()">Generate Bill Options</button><br /><br />
+    <div id="result"></div>
 
-    document.getElementById("analyzer").addEventListener("submit", async function(e) {
-      e.preventDefault();
-      const timeframe = document.getElementById("timeframe").value.trim();
-      const desiredNumCandles = parseInt(document.getElementById("numCandles").value);
-      const delay = parseInt(document.getElementById("delay").value);
-      const resultDiv = document.getElementById("result");
-      resultDiv.innerHTML = "Fetching data and analyzing...";
+    <script>
+      function processBill() {
+        let totalAmount = parseFloat(document.getElementById("total-amount").value);
+        let splits = parseInt(document.getElementById("splits").value);
 
-      try {
-        // Fetch Nasdaq data (desired number of candles)
-        const nasdaqData = await fetchNasdaqCandles(timeframe, desiredNumCandles);
-        // Fetch BTC data. If only desiredNumCandles are available for BTC,
-        // then effective pairs = desiredNumCandles - delay.
-        const btcData = await fetchBTCCandles(timeframe, desiredNumCandles);
-        
-        // Calculate effective number of pairs available after applying delay
-        const effectivePairs = Math.min(nasdaqData.length, btcData.length - delay);
-        if (effectivePairs <= 0) {
-          throw new Error("Not enough BTC data available for the specified delay.");
+        if (isNaN(totalAmount) || totalAmount <= 0) {
+          alert("Please enter a valid total amount.");
+          return;
         }
 
-        // Adjust data arrays to effective length:
-        // Nasdaq uses first effectivePairs values,
-        // BTC uses values starting from index 'delay' for effectivePairs items.
-        const nasdaqEffective = nasdaqData.slice(0, effectivePairs);
-        const btcEffectiveDelayed = btcData.slice(delay, delay + effectivePairs);
+        // Step 1: Generate random gross splits (multiples of ₹50)
+        let grossSplits = generateRandomSplits(totalAmount, splits, 50);
 
-        // Calculate Pearson correlation coefficient on the effective dataset
-        const correlation = pearsonCorrelation(nasdaqEffective, btcEffectiveDelayed);
-        resultDiv.innerHTML = `<h3>Correlation Analysis Result</h3>
-          <p><strong>Timeframe:</strong> ${timeframe}</p>
-          <p><strong>Desired Candles:</strong> ${desiredNumCandles}</p>
-          <p><strong>BTC Delay:</strong> ${delay} candles</p>
-          <p><strong>Effective Data Pairs Used:</strong> ${effectivePairs}</p>
-          <p><strong>Pearson Correlation Coefficient:</strong> ${correlation.toFixed(4)}</p>
-          <p>${correlation >= 0 ? "Positive correlation" : "Negative correlation"}</p>`;
-      } catch (error) {
-        resultDiv.innerHTML = `<p class="error">Error: ${error.message}</p>`;
+        // Step 2: Convert each gross split to taxable (non-tax) portion
+        let nonTaxSplits = grossSplits.map(split => Math.round((split / 1.05) * 100) / 100);
+
+        // Step 3: Calculate taxable and tax amount
+        let taxableAmount = Math.round(nonTaxSplits.reduce((a, b) => a + b, 0) * 100) / 100;
+        let halfTaxAmount = Math.round((taxableAmount * 0.025) * 100) / 100;
+        let totalTaxAmount = 2 * halfTaxAmount;
+        let grandTotal = Math.round((taxableAmount + totalTaxAmount) * 100) / 100;
+
+        if (Math.abs(grandTotal - totalAmount) > 0.01) {
+          document.getElementById("result").innerHTML = "Error: Tax breakdown mismatch with grand total.";
+          return;
+        }
+
+        // Step 4: Generate bill options
+        let billOptions = generateBillOptionsForSplits(nonTaxSplits, taxableAmount);
+        let resultHTML = `
+          <h2>Results:</h2>
+          <div><strong>Gross Splits (with GST):</strong> ₹${grossSplits.join(', ₹')}</div>
+          <div><strong>Non-Tax Splits:</strong> ₹${nonTaxSplits.map(a => a.toFixed(2)).join(', ₹')}</div>
+          <div><strong>Taxable Amount:</strong> ₹${taxableAmount.toFixed(2)}</div>
+          <div><strong>2.5% Tax:</strong> ₹${halfTaxAmount.toFixed(2)}</div>
+          <div><strong>Grand Total:</strong> ₹${grandTotal.toFixed(2)}</div>
+          <br>`;
+
+        if (billOptions.length > 0) {
+          billOptions.forEach((option, index) => {
+            resultHTML += `<h3>Bill Option ${index + 1}:</h3>`;
+            resultHTML += generateBillTable(option, taxableAmount, halfTaxAmount, grandTotal);
+          });
+        } else {
+          resultHTML += "<p>No possible combinations found.</p>";
+        }
+
+        document.getElementById("result").innerHTML = resultHTML;
       }
-    });
-  </script>
-</body>
+
+      function generateRandomSplits(total, parts, multiple) {
+        let splits = [];
+        let remaining = total;
+
+        for (let i = 0; i < parts - 1; i++) {
+          let max = remaining - (parts - i - 1) * multiple;
+          let min = multiple;
+          let split = Math.floor((Math.random() * ((max - min + 1) / multiple))) * multiple + min;
+          splits.push(split);
+          remaining -= split;
+        }
+        splits.push(Math.round(remaining / multiple) * multiple);
+        return splits;
+      }
+
+      function generateBillOptionsForSplits(splitAmounts, taxableAmount) {
+        const sareeRates = { min: 785, max: 1485 };
+        const fabricRates = { min: 85, max: 125 };
+        const suitRates = { min: 2000, max: 6000 };
+
+        let allCombinations = [];
+        const splitCombinations = splitAmounts.map((split) => {
+          const options = [];
+          for (let rate = sareeRates.min; rate <= sareeRates.max; rate++) {
+            if (Math.abs(split % rate) < 0.01) {
+              const quantity = Math.round((split / rate) * 100) / 100;
+              options.push({ item: "Saree", rate, quantity, amount: split });
+            }
+          }
+          for (let rate = fabricRates.min; rate <= fabricRates.max; rate++) {
+            if (Math.abs(split % rate) < 0.01) {
+              const quantity = Math.round((split / rate) * 100) / 100;
+              options.push({ item: "Fabric", rate, quantity, amount: split });
+            }
+          }
+          for (let rate = suitRates.min; rate <= suitRates.max; rate++) {
+            if (Math.abs(split % rate) < 0.01) {
+              const quantity = Math.round((split / rate) * 100) / 100;
+              options.push({ item: "Suit", rate, quantity, amount: split });
+            }
+          }
+          return options;
+        });
+
+        function combineSplits(index, currentCombination, currentTotal) {
+          if (currentTotal > taxableAmount + 0.01) return;
+          if (index === splitCombinations.length) {
+            if (Math.abs(currentTotal - taxableAmount) < 0.01) {
+              allCombinations.push([...currentCombination]);
+            }
+            return;
+          }
+          for (const option of splitCombinations[index]) {
+            currentCombination.push(option);
+            combineSplits(index + 1, currentCombination, currentTotal + option.amount);
+            currentCombination.pop();
+          }
+        }
+
+        combineSplits(0, [], 0);
+        return allCombinations;
+      }
+
+      function generateBillTable(items, taxableAmount, halfTaxAmount, grandTotal) {
+        let tableHTML = `
+          <table>
+            <thead>
+              <tr>
+                <th>Description of Goods</th>
+                <th>HSN Code</th>
+                <th>Qty</th>
+                <th>Unit</th>
+                <th>Rate</th>
+                <th>Split Amount</th>
+              </tr>
+            </thead>
+            <tbody>`;
+
+        items.forEach((item) => {
+          const hsnCode = item.item === "Saree" || item.item === "Suit" ? "5407" : "5408";
+          const unit = item.item === "Saree" || item.item === "Suit" ? "pc" : "mtr";
+          tableHTML += `
+            <tr>
+              <td>${item.item}</td>
+              <td>${hsnCode}</td>
+              <td>${item.quantity}</td>
+              <td>${unit}</td>
+              <td>₹${item.rate.toFixed(2)}</td>
+              <td>₹${item.amount.toFixed(2)}</td>
+            </tr>`;
+        });
+
+        tableHTML += `
+            </tbody>
+            <tfoot>
+              <tr>
+                <td colspan="5"><strong>Taxable Amount</strong></td>
+                <td><strong>₹${taxableAmount.toFixed(2)}</strong></td>
+              </tr>
+              <tr>
+                <td colspan="5">2.5% CGST</td>
+                <td>₹${halfTaxAmount.toFixed(2)}</td>
+              </tr>
+              <tr>
+                <td colspan="5">2.5% SGST</td>
+                <td>₹${halfTaxAmount.toFixed(2)}</td>
+              </tr>
+              <tr>
+                <td colspan="5"><strong>Grand Total</strong></td>
+                <td><strong>₹${grandTotal.toFixed(2)}</strong></td>
+              </tr>
+            </tfoot>
+          </table>`;
+
+        return tableHTML;
+      }
+    </script>
+  </body>
 </html>
