@@ -3,117 +3,449 @@
 <head>
   <title>Reverse Bill Generator</title>
 </head>
-<body style="font-family: Arial, sans-serif; margin: 0; padding: 20px; background: #f2f2f2;">
-  <div style="max-width: 900px; margin: auto; background: #fff; padding: 20px; border-radius: 10px;">
+<body style="font-family: Arial; padding: 20px; background: #f5f5f5;">
+  <div style="max-width: 900px; margin: auto; background: white; padding: 20px; border-radius: 10px;">
     <h2 style="text-align: center;">Reverse Bill Generator</h2>
 
-    <div>
-      <button onclick="addItem()" style="padding: 10px 15px; background: #28a745; color: white; border: none; border-radius: 5px;">+ Add Item</button>
-      <button onclick="generateBill()" style="padding: 10px 15px; background: #007bff; color: white; border: none; border-radius: 5px; margin-left: 10px;">Generate Bill</button>
-    </div>
+    <button onclick="addItem()" style="padding: 10px 15px; background: green; color: white; border: none; border-radius: 5px;">+ Add Item</button>
+    <button onclick="generateBill()" style="padding: 10px 15px; background: blue; color: white; border: none; border-radius: 5px; margin-left: 10px;">Generate Bill</button>
 
     <div id="itemContainer" style="margin-top: 20px;"></div>
-
-    <div id="output" style="margin-top: 30px;"></div>
+    <div id="billOutput" style="margin-top: 30px;"></div>
   </div>
 
   <script>
     let itemId = 0;
-
     function addItem() {
-      const container = document.getElementById("itemContainer");
       const div = document.createElement("div");
-      div.id = "item-" + itemId++;
-      div.style = "margin-bottom: 15px; display: flex; gap: 10px; align-items: center;";
-
+      div.style = "margin-bottom: 10px; display: flex; gap: 10px; align-items: center;";
       div.innerHTML = `
-        <select style="padding: 5px;" class="product">
-          <option value="Suit" data-hsn="5407">Suit (HSN: 5407)</option>
-          <option value="Saree" data-hsn="5407">Saree (HSN: 5407)</option>
-          <option value="Fabric" data-hsn="5408">Fabric (HSN: 5408)</option>
+        <select class="product" style="padding: 5px;">
+          <option value="Suit" data-hsn="5407" data-unit="pc">Suit</option>
+          <option value="Saree" data-hsn="5407" data-unit="pc">Saree</option>
+          <option value="Fabric" data-hsn="5408" data-unit="mtr">Fabric</option>
         </select>
-        <input type="number" placeholder="Quantity" class="qty" style="width: 80px; padding: 5px;" min="1">
-        <input type="number" placeholder="Unit Price (incl. GST)" class="price" style="width: 160px; padding: 5px;" step="0.01" min="0">
-        <button onclick="this.parentElement.remove()" style="padding: 5px 10px; background: red; color: white; border: none; border-radius: 3px;">Remove</button>
+        <input type="number" placeholder="Qty" class="qty" style="width: 60px;" min="1">
+        <input type="number" placeholder="Rate (incl. GST)" class="rate" style="width: 120px;" step="0.01" min="0">
+        <button onclick="this.parentElement.remove()" style="padding: 5px 10px; background: red; color: white;">Remove</button>
       `;
-
-      container.appendChild(div);
+      document.getElementById("itemContainer").appendChild(div);
     }
 
     function generateBill() {
-      const container = document.getElementById("itemContainer");
-      const items = container.querySelectorAll("div");
-      const resultDiv = document.getElementById("output");
+      const items = document.querySelectorAll("#itemContainer > div");
+      const groups = {};
 
-      if (items.length === 0) {
-        alert("Please add at least one item.");
-        return;
-      }
-
-      let table = `
-        <h3>Bill Summary</h3>
-        <table style="width: 100%; border-collapse: collapse;">
-          <tr style="background: #eee;">
-            <th style="border: 1px solid #ccc; padding: 8px;">Product</th>
-            <th style="border: 1px solid #ccc; padding: 8px;">HSN</th>
-            <th style="border: 1px solid #ccc; padding: 8px;">Qty</th>
-            <th style="border: 1px solid #ccc; padding: 8px;">Rate (Incl. GST)</th>
-            <th style="border: 1px solid #ccc; padding: 8px;">Taxable Value</th>
-            <th style="border: 1px solid #ccc; padding: 8px;">CGST 2.5%</th>
-            <th style="border: 1px solid #ccc; padding: 8px;">SGST 2.5%</th>
-            <th style="border: 1px solid #ccc; padding: 8px;">Total</th>
-          </tr>
-      `;
-
-      let totalTaxable = 0, totalCGST = 0, totalSGST = 0, grandTotal = 0;
-
-      for (const item of items) {
-        const productSelect = item.querySelector(".product");
-        const product = productSelect.value;
-        const hsn = productSelect.options[productSelect.selectedIndex].dataset.hsn;
+      for (let item of items) {
+        const product = item.querySelector(".product").value;
+        const hsn = item.querySelector(".product").selectedOptions[0].dataset.hsn;
+        const unit = item.querySelector(".product").selectedOptions[0].dataset.unit;
         const qty = parseInt(item.querySelector(".qty").value);
-        const rate = parseFloat(item.querySelector(".price").value);
+        const rateIncl = parseFloat(item.querySelector(".rate").value);
 
-        if (!qty || !rate || qty <= 0 || rate <= 0) {
-          alert("Please fill all fields correctly for each item.");
+        if (!qty || !rateIncl || qty <= 0 || rateIncl <= 0) {
+          alert("Please enter valid quantity and rate for all items.");
           return;
         }
 
-        const grossTotal = qty * rate;
-        const taxable = +(grossTotal / 1.05).toFixed(2);
-        const cgst = +(taxable * 0.025).toFixed(2);
+        const key = `${product}_${rateIncl}`;
+        if (!groups[key]) {
+          groups[key] = { product, hsn, unit, qty: 0, rateIncl };
+        }
+        groups[key].qty += qty;
+      }
+
+      let rows = '';
+      let totalTaxable = 0, totalCGST = 0, totalSGST = 0, grandTotal = 0;
+
+      for (let key in groups) {
+        const { product, hsn, unit, qty, rateIncl } = groups[key];
+        const rateExcl = +(rateIncl / 1.05).toFixed(2);
+        const totalIncl = +(qty * rateIncl).toFixed(2);
+        const totalExcl = +(qty * rateExcl).toFixed(2);
+        const cgst = +(totalExcl * 0.025).toFixed(2);
         const sgst = cgst;
-        const total = taxable + cgst + sgst;
 
-        totalTaxable += taxable;
-        totalCGST += cgst;
-        totalSGST += sgst;
-        grandTotal += total;
-
-        table += `
+        rows += `
           <tr>
             <td style="border: 1px solid #ccc; padding: 8px;">${product}</td>
             <td style="border: 1px solid #ccc; padding: 8px;">${hsn}</td>
-            <td style="border: 1px solid #ccc; padding: 8px; text-align: right;">${qty}</td>
-            <td style="border: 1px solid #ccc; padding: 8px; text-align: right;">₹${taxable.toFixed(2)}</td>
-            <td style="border: 1px solid #ccc; padding: 8px; text-align: right;">₹${cgst.toFixed(2)}</td>
-            <td style="border: 1px solid #ccc; padding: 8px; text-align: right;">₹${sgst.toFixed(2)}</td>
-            <td style="border: 1px solid #ccc; padding: 8px; text-align: right;">₹${total.toFixed(2)}</td>
+            <td style="border: 1px solid #ccc; padding: 8px;">₹${rateExcl.toFixed(2)}</td>
+            <td style="border: 1px solid #ccc; padding: 8px;">${qty}</td>
+            <td style="border: 1px solid #ccc; padding: 8px;">${unit}</td>
+            <td style="border: 1px solid #ccc; padding: 8px;">₹${totalIncl.toFixed(2)}</td>
           </tr>
         `;
+
+        totalTaxable += totalExcl;
+        totalCGST += cgst;
+        totalSGST += sgst;
+        grandTotal += totalIncl;
       }
 
-      table += `
-        <tr style="font-weight: bold; background: #f9f9f9;">
-          <td colspan="4" style="border: 1px solid #ccc; padding: 8px; text-align: right;">TOTAL</td>
-          <td style="border: 1px solid #ccc; padding: 8px; text-align: right;">₹${totalTaxable.toFixed(2)}</td>
-          <td style="border: 1px solid #ccc; padding: 8px; text-align: right;">₹${totalCGST.toFixed(2)}</td>
-          <td style="border: 1px solid #ccc; padding: 8px; text-align: right;">₹${totalSGST.toFixed(2)}</td>
-          <td style="border: 1px solid #ccc; padding: 8px; text-align: right;">₹${grandTotal.toFixed(2)}</td>
-        </tr>
-      </table>`;
+      const billHTML = `
+        <table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
+          <thead>
+            <tr style="background: #f0f0f0;">
+              <th style="border: 1px solid #ccc; padding: 8px;">Description of Goods</th>
+              <th style="border: 1px solid #ccc; padding: 8px;">HSN Code</th>
+              <th style="border: 1px solid #ccc; padding: 8px;">Rate</th>
+              <th style="border: 1px solid #ccc; padding: 8px;">Qty</th>
+              <th style="border: 1px solid #ccc; padding: 8px;">Unit</th>
+              <th style="border: 1px solid #ccc; padding: 8px;">Split Amount</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
 
-      resultDiv.innerHTML = table;
+        <table style="width: 100%; margin-top: 20px; font-size: 16px;">
+          <tr><td><strong>Taxable Amount</strong></td><td style="text-align: right;">₹${totalTaxable.toFixed(2)}</td></tr>
+          <tr><td>2.5% Tax Amount</td><td style="text-align: right;">₹${totalCGST.toFixed(2)}</td></tr>
+          <tr><td>2.5% Tax Amount</td><td style="text-align: right;">₹${totalSGST.toFixed(2)}</td></tr>
+          <tr><td><strong>Grand Total</strong></td><td style="text-align: right;"><strong>₹${grandTotal.toFixed(2)}</strong></td></tr>
+        </table>
+      `;
+
+      document.getElementById("billOutput").innerHTML = billHTML;
+    }
+  </script>
+</body>
+</html>
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Reverse Bill Generator</title>
+</head>
+<body style="font-family: Arial; padding: 20px; background: #f5f5f5;">
+  <div style="max-width: 900px; margin: auto; background: white; padding: 20px; border-radius: 10px;">
+    <h2 style="text-align: center;">Reverse Bill Generator</h2>
+
+    <button onclick="addItem()" style="padding: 10px 15px; background: green; color: white; border: none; border-radius: 5px;">+ Add Item</button>
+    <button onclick="generateBill()" style="padding: 10px 15px; background: blue; color: white; border: none; border-radius: 5px; margin-left: 10px;">Generate Bill</button>
+
+    <div id="itemContainer" style="margin-top: 20px;"></div>
+    <div id="billOutput" style="margin-top: 30px;"></div>
+  </div>
+
+  <script>
+    let itemId = 0;
+    function addItem() {
+      const div = document.createElement("div");
+      div.style = "margin-bottom: 10px; display: flex; gap: 10px; align-items: center;";
+      div.innerHTML = `
+        <select class="product" style="padding: 5px;">
+          <option value="Suit" data-hsn="5407" data-unit="pc">Suit</option>
+          <option value="Saree" data-hsn="5407" data-unit="pc">Saree</option>
+          <option value="Fabric" data-hsn="5408" data-unit="mtr">Fabric</option>
+        </select>
+        <input type="number" placeholder="Qty" class="qty" style="width: 60px;" min="1">
+        <input type="number" placeholder="Rate (incl. GST)" class="rate" style="width: 120px;" step="0.01" min="0">
+        <button onclick="this.parentElement.remove()" style="padding: 5px 10px; background: red; color: white;">Remove</button>
+      `;
+      document.getElementById("itemContainer").appendChild(div);
+    }
+
+    function generateBill() {
+      const items = document.querySelectorAll("#itemContainer > div");
+      const groups = {};
+
+      for (let item of items) {
+        const product = item.querySelector(".product").value;
+        const hsn = item.querySelector(".product").selectedOptions[0].dataset.hsn;
+        const unit = item.querySelector(".product").selectedOptions[0].dataset.unit;
+        const qty = parseInt(item.querySelector(".qty").value);
+        const rateIncl = parseFloat(item.querySelector(".rate").value);
+
+        if (!qty || !rateIncl || qty <= 0 || rateIncl <= 0) {
+          alert("Please enter valid quantity and rate for all items.");
+          return;
+        }
+
+        const key = `${product}_${rateIncl}`;
+        if (!groups[key]) {
+          groups[key] = { product, hsn, unit, qty: 0, rateIncl };
+        }
+        groups[key].qty += qty;
+      }
+
+      let rows = '';
+      let totalTaxable = 0, totalCGST = 0, totalSGST = 0, grandTotal = 0;
+
+      for (let key in groups) {
+        const { product, hsn, unit, qty, rateIncl } = groups[key];
+        const rateExcl = +(rateIncl / 1.05).toFixed(2);
+        const totalIncl = +(qty * rateIncl).toFixed(2);
+        const totalExcl = +(qty * rateExcl).toFixed(2);
+        const cgst = +(totalExcl * 0.025).toFixed(2);
+        const sgst = cgst;
+
+        rows += `
+          <tr>
+            <td style="border: 1px solid #ccc; padding: 8px;">${product}</td>
+            <td style="border: 1px solid #ccc; padding: 8px;">${hsn}</td>
+            <td style="border: 1px solid #ccc; padding: 8px;">₹${rateExcl.toFixed(2)}</td>
+            <td style="border: 1px solid #ccc; padding: 8px;">${qty}</td>
+            <td style="border: 1px solid #ccc; padding: 8px;">${unit}</td>
+            <td style="border: 1px solid #ccc; padding: 8px;">₹${totalIncl.toFixed(2)}</td>
+          </tr>
+        `;
+
+        totalTaxable += totalExcl;
+        totalCGST += cgst;
+        totalSGST += sgst;
+        grandTotal += totalIncl;
+      }
+
+      const billHTML = `
+        <table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
+          <thead>
+            <tr style="background: #f0f0f0;">
+              <th style="border: 1px solid #ccc; padding: 8px;">Description of Goods</th>
+              <th style="border: 1px solid #ccc; padding: 8px;">HSN Code</th>
+              <th style="border: 1px solid #ccc; padding: 8px;">Rate</th>
+              <th style="border: 1px solid #ccc; padding: 8px;">Qty</th>
+              <th style="border: 1px solid #ccc; padding: 8px;">Unit</th>
+              <th style="border: 1px solid #ccc; padding: 8px;">Split Amount</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+
+        <table style="width: 100%; margin-top: 20px; font-size: 16px;">
+          <tr><td><strong>Taxable Amount</strong></td><td style="text-align: right;">₹${totalTaxable.toFixed(2)}</td></tr>
+          <tr><td>2.5% Tax Amount</td><td style="text-align: right;">₹${totalCGST.toFixed(2)}</td></tr>
+          <tr><td>2.5% Tax Amount</td><td style="text-align: right;">₹${totalSGST.toFixed(2)}</td></tr>
+          <tr><td><strong>Grand Total</strong></td><td style="text-align: right;"><strong>₹${grandTotal.toFixed(2)}</strong></td></tr>
+        </table>
+      `;
+
+      document.getElementById("billOutput").innerHTML = billHTML;
+    }
+  </script>
+</body>
+</html>
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Reverse Bill Generator</title>
+</head>
+<body style="font-family: Arial; padding: 20px; background: #f5f5f5;">
+  <div style="max-width: 900px; margin: auto; background: white; padding: 20px; border-radius: 10px;">
+    <h2 style="text-align: center;">Reverse Bill Generator</h2>
+
+    <button onclick="addItem()" style="padding: 10px 15px; background: green; color: white; border: none; border-radius: 5px;">+ Add Item</button>
+    <button onclick="generateBill()" style="padding: 10px 15px; background: blue; color: white; border: none; border-radius: 5px; margin-left: 10px;">Generate Bill</button>
+
+    <div id="itemContainer" style="margin-top: 20px;"></div>
+    <div id="billOutput" style="margin-top: 30px;"></div>
+  </div>
+
+  <script>
+    let itemId = 0;
+    function addItem() {
+      const div = document.createElement("div");
+      div.style = "margin-bottom: 10px; display: flex; gap: 10px; align-items: center;";
+      div.innerHTML = `
+        <select class="product" style="padding: 5px;">
+          <option value="Suit" data-hsn="5407" data-unit="pc">Suit</option>
+          <option value="Saree" data-hsn="5407" data-unit="pc">Saree</option>
+          <option value="Fabric" data-hsn="5408" data-unit="mtr">Fabric</option>
+        </select>
+        <input type="number" placeholder="Qty" class="qty" style="width: 60px;" min="1">
+        <input type="number" placeholder="Rate (incl. GST)" class="rate" style="width: 120px;" step="0.01" min="0">
+        <button onclick="this.parentElement.remove()" style="padding: 5px 10px; background: red; color: white;">Remove</button>
+      `;
+      document.getElementById("itemContainer").appendChild(div);
+    }
+
+    function generateBill() {
+      const items = document.querySelectorAll("#itemContainer > div");
+      const groups = {};
+
+      for (let item of items) {
+        const product = item.querySelector(".product").value;
+        const hsn = item.querySelector(".product").selectedOptions[0].dataset.hsn;
+        const unit = item.querySelector(".product").selectedOptions[0].dataset.unit;
+        const qty = parseInt(item.querySelector(".qty").value);
+        const rateIncl = parseFloat(item.querySelector(".rate").value);
+
+        if (!qty || !rateIncl || qty <= 0 || rateIncl <= 0) {
+          alert("Please enter valid quantity and rate for all items.");
+          return;
+        }
+
+        const key = `${product}_${rateIncl}`;
+        if (!groups[key]) {
+          groups[key] = { product, hsn, unit, qty: 0, rateIncl };
+        }
+        groups[key].qty += qty;
+      }
+
+      let rows = '';
+      let totalTaxable = 0, totalCGST = 0, totalSGST = 0, grandTotal = 0;
+
+      for (let key in groups) {
+        const { product, hsn, unit, qty, rateIncl } = groups[key];
+        const rateExcl = +(rateIncl / 1.05).toFixed(2);
+        const totalIncl = +(qty * rateIncl).toFixed(2);
+        const totalExcl = +(qty * rateExcl).toFixed(2);
+        const cgst = +(totalExcl * 0.025).toFixed(2);
+        const sgst = cgst;
+
+        rows += `
+          <tr>
+            <td style="border: 1px solid #ccc; padding: 8px;">${product}</td>
+            <td style="border: 1px solid #ccc; padding: 8px;">${hsn}</td>
+            <td style="border: 1px solid #ccc; padding: 8px;">₹${rateExcl.toFixed(2)}</td>
+            <td style="border: 1px solid #ccc; padding: 8px;">${qty}</td>
+            <td style="border: 1px solid #ccc; padding: 8px;">${unit}</td>
+            <td style="border: 1px solid #ccc; padding: 8px;">₹${totalIncl.toFixed(2)}</td>
+          </tr>
+        `;
+
+        totalTaxable += totalExcl;
+        totalCGST += cgst;
+        totalSGST += sgst;
+        grandTotal += totalIncl;
+      }
+
+      const billHTML = `
+        <table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
+          <thead>
+            <tr style="background: #f0f0f0;">
+              <th style="border: 1px solid #ccc; padding: 8px;">Description of Goods</th>
+              <th style="border: 1px solid #ccc; padding: 8px;">HSN Code</th>
+              <th style="border: 1px solid #ccc; padding: 8px;">Rate</th>
+              <th style="border: 1px solid #ccc; padding: 8px;">Qty</th>
+              <th style="border: 1px solid #ccc; padding: 8px;">Unit</th>
+              <th style="border: 1px solid #ccc; padding: 8px;">Split Amount</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+
+        <table style="width: 100%; margin-top: 20px; font-size: 16px;">
+          <tr><td><strong>Taxable Amount</strong></td><td style="text-align: right;">₹${totalTaxable.toFixed(2)}</td></tr>
+          <tr><td>2.5% Tax Amount</td><td style="text-align: right;">₹${totalCGST.toFixed(2)}</td></tr>
+          <tr><td>2.5% Tax Amount</td><td style="text-align: right;">₹${totalSGST.toFixed(2)}</td></tr>
+          <tr><td><strong>Grand Total</strong></td><td style="text-align: right;"><strong>₹${grandTotal.toFixed(2)}</strong></td></tr>
+        </table>
+      `;
+
+      document.getElementById("billOutput").innerHTML = billHTML;
+    }
+  </script>
+</body>
+</html>
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Reverse Bill Generator</title>
+</head>
+<body style="font-family: Arial; padding: 20px; background: #f5f5f5;">
+  <div style="max-width: 900px; margin: auto; background: white; padding: 20px; border-radius: 10px;">
+    <h2 style="text-align: center;">Reverse Bill Generator</h2>
+
+    <button onclick="addItem()" style="padding: 10px 15px; background: green; color: white; border: none; border-radius: 5px;">+ Add Item</button>
+    <button onclick="generateBill()" style="padding: 10px 15px; background: blue; color: white; border: none; border-radius: 5px; margin-left: 10px;">Generate Bill</button>
+
+    <div id="itemContainer" style="margin-top: 20px;"></div>
+    <div id="billOutput" style="margin-top: 30px;"></div>
+  </div>
+
+  <script>
+    let itemId = 0;
+    function addItem() {
+      const div = document.createElement("div");
+      div.style = "margin-bottom: 10px; display: flex; gap: 10px; align-items: center;";
+      div.innerHTML = `
+        <select class="product" style="padding: 5px;">
+          <option value="Suit" data-hsn="5407" data-unit="pc">Suit</option>
+          <option value="Saree" data-hsn="5407" data-unit="pc">Saree</option>
+          <option value="Fabric" data-hsn="5408" data-unit="mtr">Fabric</option>
+        </select>
+        <input type="number" placeholder="Qty" class="qty" style="width: 60px;" min="1">
+        <input type="number" placeholder="Rate (incl. GST)" class="rate" style="width: 120px;" step="0.01" min="0">
+        <button onclick="this.parentElement.remove()" style="padding: 5px 10px; background: red; color: white;">Remove</button>
+      `;
+      document.getElementById("itemContainer").appendChild(div);
+    }
+
+    function generateBill() {
+      const items = document.querySelectorAll("#itemContainer > div");
+      const groups = {};
+
+      for (let item of items) {
+        const product = item.querySelector(".product").value;
+        const hsn = item.querySelector(".product").selectedOptions[0].dataset.hsn;
+        const unit = item.querySelector(".product").selectedOptions[0].dataset.unit;
+        const qty = parseInt(item.querySelector(".qty").value);
+        const rateIncl = parseFloat(item.querySelector(".rate").value);
+
+        if (!qty || !rateIncl || qty <= 0 || rateIncl <= 0) {
+          alert("Please enter valid quantity and rate for all items.");
+          return;
+        }
+
+        const key = `${product}_${rateIncl}`;
+        if (!groups[key]) {
+          groups[key] = { product, hsn, unit, qty: 0, rateIncl };
+        }
+        groups[key].qty += qty;
+      }
+
+      let rows = '';
+      let totalTaxable = 0, totalCGST = 0, totalSGST = 0, grandTotal = 0;
+
+      for (let key in groups) {
+        const { product, hsn, unit, qty, rateIncl } = groups[key];
+        const rateExcl = +(rateIncl / 1.05).toFixed(2);
+        const totalIncl = +(qty * rateIncl).toFixed(2);
+        const totalExcl = +(qty * rateExcl).toFixed(2);
+        const cgst = +(totalExcl * 0.025).toFixed(2);
+        const sgst = cgst;
+
+        rows += `
+          <tr>
+            <td style="border: 1px solid #ccc; padding: 8px;">${product}</td>
+            <td style="border: 1px solid #ccc; padding: 8px;">${hsn}</td>
+            <td style="border: 1px solid #ccc; padding: 8px;">₹${rateExcl.toFixed(2)}</td>
+            <td style="border: 1px solid #ccc; padding: 8px;">${qty}</td>
+            <td style="border: 1px solid #ccc; padding: 8px;">${unit}</td>
+            <td style="border: 1px solid #ccc; padding: 8px;">₹${totalIncl.toFixed(2)}</td>
+          </tr>
+        `;
+
+        totalTaxable += totalExcl;
+        totalCGST += cgst;
+        totalSGST += sgst;
+        grandTotal += totalIncl;
+      }
+
+      const billHTML = `
+        <table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
+          <thead>
+            <tr style="background: #f0f0f0;">
+              <th style="border: 1px solid #ccc; padding: 8px;">Description of Goods</th>
+              <th style="border: 1px solid #ccc; padding: 8px;">HSN Code</th>
+              <th style="border: 1px solid #ccc; padding: 8px;">Rate</th>
+              <th style="border: 1px solid #ccc; padding: 8px;">Qty</th>
+              <th style="border: 1px solid #ccc; padding: 8px;">Unit</th>
+              <th style="border: 1px solid #ccc; padding: 8px;">Split Amount</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+
+        <table style="width: 100%; margin-top: 20px; font-size: 16px;">
+          <tr><td><strong>Taxable Amount</strong></td><td style="text-align: right;">₹${totalTaxable.toFixed(2)}</td></tr>
+          <tr><td>2.5% Tax Amount</td><td style="text-align: right;">₹${totalCGST.toFixed(2)}</td></tr>
+          <tr><td>2.5% Tax Amount</td><td style="text-align: right;">₹${totalSGST.toFixed(2)}</td></tr>
+          <tr><td><strong>Grand Total</strong></td><td style="text-align: right;"><strong>₹${grandTotal.toFixed(2)}</strong></td></tr>
+        </table>
+      `;
+
+      document.getElementById("billOutput").innerHTML = billHTML;
     }
   </script>
 </body>
