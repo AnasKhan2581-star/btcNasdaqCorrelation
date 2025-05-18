@@ -1,217 +1,121 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-<meta charset="UTF-8">
-<title>Bill Options Generator</title>
-<style>
-body { font-family: Arial, sans-serif; margin: 20px; }
-.container { max-width: 800px; margin: auto; }
-label { display: block; margin-top: 10px; }
-input[type=number], select { width: 100%; padding: 5px; margin-top: 5px; }
-input[type=checkbox] { margin-right: 5px; }
-.button { margin-top: 15px; padding: 10px 20px; }
-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-th, td { border: 1px solid #000; padding: 8px; text-align: left; }
-th { background: #f0f0f0; }
-.tax-row td { border: none; padding: 5px 0; }
-@media (min-width: 600px) {
-    .row { display: flex; }
-    .row > div { flex: 1; margin-right: 10px; }
-    .row > div:last-child { margin-right: 0; }
-}
-</style>
+  <title>Reverse Bill Generator</title>
 </head>
-<body>
-<div class="container">
-  <h1>Bill Options Generator</h1>
-  <div class="row">
+<body style="font-family: Arial, sans-serif; margin: 0; padding: 20px; background: #f2f2f2;">
+  <div style="max-width: 900px; margin: auto; background: #fff; padding: 20px; border-radius: 10px;">
+    <h2 style="text-align: center;">Reverse Bill Generator</h2>
+
     <div>
-      <label for="grandTotal">Grand Total (including GST) ₹</label>
-      <input type="number" id="grandTotal" step="0.01" placeholder="Enter grand total">
+      <button onclick="addItem()" style="padding: 10px 15px; background: #28a745; color: white; border: none; border-radius: 5px;">+ Add Item</button>
+      <button onclick="generateBill()" style="padding: 10px 15px; background: #007bff; color: white; border: none; border-radius: 5px; margin-left: 10px;">Generate Bill</button>
     </div>
-    <div>
-      <label for="splits">Number of Splits (2-5)</label>
-      <input type="number" id="splits" min="2" max="5" value="2">
-    </div>
+
+    <div id="itemContainer" style="margin-top: 20px;"></div>
+
+    <div id="output" style="margin-top: 30px;"></div>
   </div>
-  <div style="margin-top:10px;">
-    <label>Item Categories:</label>
-    <label><input type="checkbox" id="catSaree"> Saree</label>
-    <label><input type="checkbox" id="catFabric"> Fabric</label>
-    <label><input type="checkbox" id="catSuit"> Suit</label>
-  </div>
-  <div class="row" style="margin-top:10px;">
-    <div>
-      <label for="gstType">GST Type</label>
-      <select id="gstType">
-        <option value="cgst">CGST + SGST</option>
-        <option value="igst">IGST</option>
-      </select>
-    </div>
-    <div>
-      <label for="igstPercent">IGST %</label>
-      <input type="number" id="igstPercent" step="0.01" value="0">
-    </div>
-  </div>
-  <div id="cgst-sgst-row" class="row">
-    <div>
-      <label for="cgstPercent">CGST %</label>
-      <input type="number" id="cgstPercent" step="0.01" value="2.5">
-    </div>
-    <div>
-      <label for="sgstPercent">SGST %</label>
-      <input type="number" id="sgstPercent" step="0.01" value="2.5">
-    </div>
-  </div>
-  <button class="button" onclick="generateBill()">Generate Bill Option</button>
-  <div id="output" style="margin-top:20px;"></div>
-</div>
-<script>
-function generateBill() {
-  // Get input values
-  var grandTotal = parseFloat(document.getElementById("grandTotal").value);
-  var splits = parseInt(document.getElementById("splits").value);
-  var cats = [];
-  if(document.getElementById("catSaree").checked) cats.push("Saree");
-  if(document.getElementById("catFabric").checked) cats.push("Fabric");
-  if(document.getElementById("catSuit").checked) cats.push("Suit");
-  var gstType = document.getElementById("gstType").value;
-  var cgst = parseFloat(document.getElementById("cgstPercent").value) || 0;
-  var sgst = parseFloat(document.getElementById("sgstPercent").value) || 0;
-  var igst = parseFloat(document.getElementById("igstPercent").value) || 0;
-  // Adjust GST type
-  if(gstType === "cgst") {
-    igst = 0;
-  } else {
-    cgst = 0;
-    sgst = 0;
-  }
-  var totalTaxPercent = cgst + sgst + igst;
-  // Validate inputs
-  if(!grandTotal || grandTotal <= 0) {
-    alert("Please enter a valid grand total.");
-    return;
-  }
-  if(!splits || splits < 2 || splits > 5) {
-    alert("Number of splits must be between 2 and 5.");
-    return;
-  }
-  if(cats.length === 0) {
-    alert("Please select at least one item category.");
-    return;
-  }
-  // Calculate base total (non-tax)
-  var baseTotal = grandTotal / (1 + totalTaxPercent/100);
-  // Split base equally
-  var baseParts = [];
-  for(var i = 0; i < splits; i++) {
-    baseParts.push(baseTotal/splits);
-  }
-  // Item info
-  var itemInfo = {
-    "Saree": {min:700, max:1050, hsn:"HSN580690", unit:"pcs"},
-    "Fabric": {min:85, max:125, hsn:"HSN5007", unit:"m"},
-    "Suit": {min:2000, max:5000, hsn:"HSN6204", unit:"pcs"}
-  };
-  // Filter selected items
-  var selItems = {};
-  cats.forEach(function(cat) {
-    if(itemInfo[cat]) selItems[cat] = itemInfo[cat];
-  });
-  var combos = [];
-  var catList = Object.keys(selItems);
-  var idxCat = 0;
-  for(var i = 0; i < baseParts.length; i++) {
-    var base = baseParts[i];
-    var found = false;
-    var tries = 0;
-    while(tries < catList.length && !found) {
-      var cat = catList[idxCat];
-      var info = selItems[cat];
-      var minr = info.min;
-      var maxr = info.max;
-      var qMin = base / maxr;
-      var qMax = base / minr;
-      if(qMax >= 0.01) {
-        var qStart = Math.ceil(Math.max(qMin, 0.01)*100)/100;
-        var qEnd = Math.floor(qMax*100)/100;
-        for(var q = qStart; q <= qEnd + 1e-9; q = parseFloat((q + 0.01).toFixed(2))) {
-          var r = base / q;
-          if(r >= minr && r <= maxr) {
-            combos.push({
-              item: cat,
-              hsn: info.hsn,
-              qty: q.toFixed(2),
-              unit: info.unit,
-              rate: r.toFixed(2),
-              amount: base.toFixed(2)
-            });
-            found = true;
-            break;
-          }
-        }
+
+  <script>
+    let itemId = 0;
+
+    function addItem() {
+      const container = document.getElementById("itemContainer");
+      const div = document.createElement("div");
+      div.id = "item-" + itemId++;
+      div.style = "margin-bottom: 15px; display: flex; gap: 10px; align-items: center;";
+
+      div.innerHTML = `
+        <select style="padding: 5px;" class="product">
+          <option value="Suit" data-hsn="5407">Suit (HSN: 5407)</option>
+          <option value="Saree" data-hsn="5407">Saree (HSN: 5407)</option>
+          <option value="Fabric" data-hsn="5408">Fabric (HSN: 5408)</option>
+        </select>
+        <input type="number" placeholder="Quantity" class="qty" style="width: 80px; padding: 5px;" min="1">
+        <input type="number" placeholder="Unit Price (incl. GST)" class="price" style="width: 160px; padding: 5px;" step="0.01" min="0">
+        <button onclick="this.parentElement.remove()" style="padding: 5px 10px; background: red; color: white; border: none; border-radius: 3px;">Remove</button>
+      `;
+
+      container.appendChild(div);
+    }
+
+    function generateBill() {
+      const container = document.getElementById("itemContainer");
+      const items = container.querySelectorAll("div");
+      const resultDiv = document.getElementById("output");
+
+      if (items.length === 0) {
+        alert("Please add at least one item.");
+        return;
       }
-      idxCat = (idxCat + 1) % catList.length;
-      tries++;
+
+      let table = `
+        <h3>Bill Summary</h3>
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr style="background: #eee;">
+            <th style="border: 1px solid #ccc; padding: 8px;">Product</th>
+            <th style="border: 1px solid #ccc; padding: 8px;">HSN</th>
+            <th style="border: 1px solid #ccc; padding: 8px;">Qty</th>
+            <th style="border: 1px solid #ccc; padding: 8px;">Rate (Incl. GST)</th>
+            <th style="border: 1px solid #ccc; padding: 8px;">Taxable Value</th>
+            <th style="border: 1px solid #ccc; padding: 8px;">CGST 2.5%</th>
+            <th style="border: 1px solid #ccc; padding: 8px;">SGST 2.5%</th>
+            <th style="border: 1px solid #ccc; padding: 8px;">Total</th>
+          </tr>
+      `;
+
+      let totalTaxable = 0, totalCGST = 0, totalSGST = 0, grandTotal = 0;
+
+      for (const item of items) {
+        const productSelect = item.querySelector(".product");
+        const product = productSelect.value;
+        const hsn = productSelect.options[productSelect.selectedIndex].dataset.hsn;
+        const qty = parseInt(item.querySelector(".qty").value);
+        const rate = parseFloat(item.querySelector(".price").value);
+
+        if (!qty || !rate || qty <= 0 || rate <= 0) {
+          alert("Please fill all fields correctly for each item.");
+          return;
+        }
+
+        const grossTotal = qty * rate;
+        const taxable = +(grossTotal / 1.05).toFixed(2);
+        const cgst = +(taxable * 0.025).toFixed(2);
+        const sgst = cgst;
+        const total = taxable + cgst + sgst;
+
+        totalTaxable += taxable;
+        totalCGST += cgst;
+        totalSGST += sgst;
+        grandTotal += total;
+
+        table += `
+          <tr>
+            <td style="border: 1px solid #ccc; padding: 8px;">${product}</td>
+            <td style="border: 1px solid #ccc; padding: 8px;">${hsn}</td>
+            <td style="border: 1px solid #ccc; padding: 8px; text-align: right;">${qty}</td>
+            <td style="border: 1px solid #ccc; padding: 8px; text-align: right;">₹${rate.toFixed(2)}</td>
+            <td style="border: 1px solid #ccc; padding: 8px; text-align: right;">₹${taxable.toFixed(2)}</td>
+            <td style="border: 1px solid #ccc; padding: 8px; text-align: right;">₹${cgst.toFixed(2)}</td>
+            <td style="border: 1px solid #ccc; padding: 8px; text-align: right;">₹${sgst.toFixed(2)}</td>
+            <td style="border: 1px solid #ccc; padding: 8px; text-align: right;">₹${total.toFixed(2)}</td>
+          </tr>
+        `;
+      }
+
+      table += `
+        <tr style="font-weight: bold; background: #f9f9f9;">
+          <td colspan="4" style="border: 1px solid #ccc; padding: 8px; text-align: right;">TOTAL</td>
+          <td style="border: 1px solid #ccc; padding: 8px; text-align: right;">₹${totalTaxable.toFixed(2)}</td>
+          <td style="border: 1px solid #ccc; padding: 8px; text-align: right;">₹${totalCGST.toFixed(2)}</td>
+          <td style="border: 1px solid #ccc; padding: 8px; text-align: right;">₹${totalSGST.toFixed(2)}</td>
+          <td style="border: 1px solid #ccc; padding: 8px; text-align: right;">₹${grandTotal.toFixed(2)}</td>
+        </tr>
+      </table>`;
+
+      resultDiv.innerHTML = table;
     }
-    if(!found) {
-      document.getElementById("output").innerHTML = "<p><strong>No valid combination found for one of the splits.</strong></p>";
-      return;
-    }
-  }
-  // Compute totals
-  var baseSum = combos.reduce(function(acc, c) { return acc + parseFloat(c.amount); }, 0);
-  var cgstAmt = baseSum * cgst/100;
-  var sgstAmt = baseSum * sgst/100;
-  var igstAmt = baseSum * igst/100;
-  var finalTotal = baseSum + cgstAmt + sgstAmt + igstAmt;
-  // Prepare output
-  var outputHtml = "";
-  // Gross splits (rounded to nearest 50 for display)
-  var grossSplits = combos.map(function(c) {
-    var gross = parseFloat(c.amount) * (1 + totalTaxPercent/100);
-    var grossRounded = Math.round(gross/50)*50;
-    return grossRounded.toFixed(2);
-  });
-  outputHtml += "<p><strong>Gross Splits (rounded to ₹50):</strong> ₹" + grossSplits.join(", ₹") + "</p>";
-  // Non-tax splits
-  var baseSplits = combos.map(function(c) { return parseFloat(c.amount).toFixed(2); });
-  outputHtml += "<p><strong>Non-tax (Base) Splits:</strong> ₹" + baseSplits.join(", ₹") + "</p>";
-  outputHtml += "<p><strong>Total Taxable Amount:</strong> ₹" + baseSum.toFixed(2) + "</p>";
-  outputHtml += "<p><strong>CGST Amount:</strong> ₹" + cgstAmt.toFixed(2) + 
-                " &nbsp; <strong>SGST Amount:</strong> ₹" + sgstAmt.toFixed(2) + 
-                " &nbsp; <strong>IGST Amount:</strong> ₹" + igstAmt.toFixed(2) + "</p>";
-  outputHtml += "<p><strong>Final Grand Total:</strong> ₹" + finalTotal.toFixed(2) + "</p>";
-  // Bill table
-  outputHtml += "<table><tr><th>Item</th><th>HSN</th><th>Qty</th><th>Unit</th><th>Rate (₹)</th><th>Amount (₹)</th></tr>";
-  combos.forEach(function(c) {
-    outputHtml += "<tr><td>" + c.item + "</td><td>" + c.hsn + 
-                  "</td><td>" + c.qty + "</td><td>" + c.unit + 
-                  "</td><td>" + parseFloat(c.rate).toFixed(2) + 
-                  "</td><td>" + parseFloat(c.amount).toFixed(2) + "</td></tr>";
-  });
-  outputHtml += "</table>";
-  document.getElementById("output").innerHTML = outputHtml;
-}
-// GST type change handler
-document.getElementById("gstType").addEventListener("change", function() {
-  var gstType = document.getElementById("gstType").value;
-  if(gstType === "cgst") {
-    document.getElementById("cgstPercent").disabled = false;
-    document.getElementById("sgstPercent").disabled = false;
-    document.getElementById("igstPercent").disabled = true;
-    document.getElementById("igstPercent").value = "0";
-  } else {
-    document.getElementById("cgstPercent").disabled = true;
-    document.getElementById("sgstPercent").disabled = true;
-    document.getElementById("cgstPercent").value = "0";
-    document.getElementById("sgstPercent").value = "0";
-    document.getElementById("igstPercent").disabled = false;
-    document.getElementById("igstPercent").value = "5.0";
-  }
-});
-// Initialize default state
-document.getElementById("igstPercent").disabled = true;
-</script>
+  </script>
 </body>
 </html>
