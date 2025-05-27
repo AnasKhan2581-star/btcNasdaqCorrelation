@@ -5,12 +5,18 @@
   <link href="https://fonts.cdnfonts.com/css/royal-crescent" rel="stylesheet">
   <style>
     @media print {
-      button {
+      button, input, select {
         display: none !important;
       }
-      input {
-        border: none;
+      .print-text {
+        display: inline;
       }
+      .screen-only {
+        display: none;
+      }
+    }
+    .print-text {
+      display: none;
     }
   </style>
 </head>
@@ -18,19 +24,28 @@
   <div style="max-width: 900px; margin: auto; background: white; padding: 20px; border-radius: 10px;">
     <div style="text-align: center;">
       <h2 style="font-family: 'Royal Crescent', cursive; font-size: 48px; margin: 0;">ZARDOZ</h2>
-      <p style="margin: 8px 0; font-size: 14px;">
+      <p style="margin: 5px 0; font-size: 16px;">
         <strong>Anas Traders</strong><br>
-        4760/G2, Ground Floor, Jaipuriya building,
+        4760/G2, Ground Floor, Jaipuriya building,<br>
         Jogiwara, Nai Sarak, New Delhi, Delhi 110006<br>
-        GSTIN/UIN: 07AGGPK5556M1ZX<br><br>
+        GSTIN/UIN: 07AGGPK5556M1ZX<br>
         01145604564, 9873725278
       </p>
     </div>
 
     <div style="margin-top: 20px; display: flex; justify-content: space-between;">
-      <label>Invoice No: <input type="text" id="invoiceNo" value="" style="padding: 5px;"></label>
-      <label>Customer: <input type="text" id="customer" value="Cash" style="padding: 5px;"></label>
-      <label>Date: <input type="date" id="invoiceDate" style="padding: 5px;"></label>
+      <label>Invoice No: 
+        <input type="text" id="invoiceNo" value="" style="padding: 5px;">
+        <span class="print-text" id="printInvoiceNo"></span>
+      </label>
+      <label>Customer: 
+        <input type="text" id="customer" value="Cash" style="padding: 5px;">
+        <span class="print-text" id="printCustomer"></span>
+      </label>
+      <label>Date: 
+        <input type="date" id="invoiceDate" style="padding: 5px;">
+        <span class="print-text" id="printDate"></span>
+      </label>
     </div>
 
     <button onclick="addItem()" style="margin-top: 20px; padding: 10px 15px; background: green; color: white; border: none; border-radius: 5px;">+ Add Item</button>
@@ -62,6 +77,14 @@
     }
 
     function generateBill() {
+      const invoiceNo = document.getElementById("invoiceNo").value;
+      const customer = document.getElementById("customer").value;
+      const invoiceDate = document.getElementById("invoiceDate").value;
+
+      document.getElementById("printInvoiceNo").innerText = invoiceNo;
+      document.getElementById("printCustomer").innerText = customer;
+      document.getElementById("printDate").innerText = invoiceDate;
+
       const items = document.querySelectorAll("#itemContainer > div");
       const groups = {};
 
@@ -146,7 +169,7 @@
           <strong>Terms & Conditions:</strong><br>
           1. No return.<br>
           2. Exchange within 3 days.<br>
-          3. No guarantee of fabric, color, work, cutdana etc in era of fashion.
+          3. No guarantee of fabric, color, cutdana etc work in era of fashion.
         </p>
       `;
 
