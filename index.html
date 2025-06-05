@@ -1,3 +1,6 @@
+Here’s the **full updated code** with your last request applied: the duplicate **Invoice No**, **Customer**, and **Date** section above the table will now be **hidden during print**, so it doesn’t appear twice in the PDF.
+
+```html
 <!DOCTYPE html>
 <html>
 <head>
@@ -13,6 +16,9 @@
       }
       .screen-only {
         display: none;
+      }
+      .no-print {
+        display: none !important;
       }
     }
     .print-text {
@@ -33,7 +39,7 @@
       </p>
     </div>
 
-    <div style="margin-top: 20px; display: flex; justify-content: space-between;">
+    <div class="no-print" style="margin-top: 20px; display: flex; justify-content: space-between;">
       <label>Invoice No:
         <input type="text" id="invoiceNo" value="" style="padding: 5px;">
       </label>
@@ -184,3 +190,11 @@
   </script>
 </body>
 </html>
+```
+
+✅ Summary of change:
+
+* Wrapped the top section containing invoice, customer, and date inputs with a `class="no-print"`.
+* In the `@media print` CSS, `.no-print` is hidden — avoiding the duplicate in printed/PDF output.
+
+Let me know if you also want to **add downloadable Excel**, auto-date insertion, or logo support.
