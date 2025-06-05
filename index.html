@@ -34,19 +34,19 @@
     </div>
 
     <div style="margin-top: 20px; display: flex; justify-content: space-between;">
-      <div><strong>Invoice No:</strong> <span id="printInvoiceNo">________</span></div>
-      <div><strong>Customer:</strong> <span id="printCustomer">________</span></div>
-      <div><strong>Date:</strong> <span id="printDate">________</span></div>
+      <label>Invoice No:
+        <input type="text" id="invoiceNo" value="" style="padding: 5px;">
+      </label>
+      <label>Customer:
+        <input type="text" id="customer" value="Cash" style="padding: 5px;">
+      </label>
+      <label>Date:
+        <input type="date" id="invoiceDate" style="padding: 5px;">
+      </label>
     </div>
 
-    <div class="screen-only" style="margin-top: 10px; display: flex; justify-content: space-between;">
-      <label>Invoice No: <input type="text" id="invoiceNo" style="padding: 5px;"></label>
-      <label>Customer: <input type="text" id="customer" value="Cash" style="padding: 5px;"></label>
-      <label>Date: <input type="date" id="invoiceDate" style="padding: 5px;"></label>
-    </div>
-
-    <button class="screen-only" onclick="addItem()" style="margin-top: 20px; padding: 10px 15px; background: green; color: white; border: none; border-radius: 5px;">+ Add Item</button>
-    <button class="screen-only" onclick="generateBill()" style="margin-top: 20px; padding: 10px 15px; background: blue; color: white; border: none; border-radius: 5px; margin-left: 10px;">Generate Bill</button>
+    <button onclick="addItem()" style="margin-top: 20px; padding: 10px 15px; background: green; color: white; border: none; border-radius: 5px;">+ Add Item</button>
+    <button onclick="generateBill()" style="margin-top: 20px; padding: 10px 15px; background: blue; color: white; border: none; border-radius: 5px; margin-left: 10px;">Generate Bill</button>
 
     <div id="itemContainer" style="margin-top: 20px;"></div>
     <div id="billOutput" style="margin-top: 30px;"></div>
@@ -56,6 +56,7 @@
   </div>
 
   <script>
+    let itemId = 0;
     function addItem() {
       const div = document.createElement("div");
       div.style = "margin-bottom: 10px; display: flex; gap: 10px; align-items: center;";
@@ -76,10 +77,6 @@
       const invoiceNo = document.getElementById("invoiceNo").value;
       const customer = document.getElementById("customer").value;
       const invoiceDate = document.getElementById("invoiceDate").value;
-
-      document.getElementById("printInvoiceNo").innerText = invoiceNo;
-      document.getElementById("printCustomer").innerText = customer;
-      document.getElementById("printDate").innerText = invoiceDate;
 
       const items = document.querySelectorAll("#itemContainer > div");
       const groups = {};
@@ -138,6 +135,12 @@
       const roundSign = roundOff >= 0 ? '+' : '-';
 
       const billHTML = `
+        <div style="margin-top: 20px; display: flex; justify-content: space-between; font-size: 16px;">
+          <strong>Invoice No: ${invoiceNo}</strong>
+          <strong>Customer: ${customer}</strong>
+          <strong>Date: ${invoiceDate}</strong>
+        </div>
+
         <table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
           <thead>
             <tr style="background: #f0f0f0;">
@@ -167,6 +170,12 @@
           2. Exchange within 3 days.<br>
           3. No guarantee of fabric, color, cutdana etc work in era of fashion.
         </p>
+
+        <div style="margin-top: 60px; text-align: right;">
+          <p><strong>For Anas Traders</strong></p>
+          <div style="height: 50px;"></div>
+          <p><strong>Azhar Khan</strong></p>
+        </div>
       `;
 
       document.getElementById("billOutput").innerHTML = billHTML;
