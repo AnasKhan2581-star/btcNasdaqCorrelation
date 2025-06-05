@@ -157,7 +157,7 @@
       }
 
       const finalComputedTotal = (totalTaxable + totalCGST + totalSGST + totalIGST);
-      const roundOff = +(grandTotal - finalComputedTotal).toFixed(2);
+      const roundOff = +(grandTotal - finalComputedTotal);
       const roundSign = roundOff >= 0 ? '+' : '-';
 
       const totalInWords = numberToWords(grandTotal);
