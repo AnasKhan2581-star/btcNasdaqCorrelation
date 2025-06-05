@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Reverse Bill Generator</title>
+  <title>Bill Generator</title>
   <link href="https://fonts.cdnfonts.com/css/royal-crescent" rel="stylesheet">
   <style>
     @media print {
@@ -45,13 +45,14 @@
       </label>
     </div>
 
-    <label class="screen-only igst-toggle" style="margin-top: 15px; display: block;">
-      <input type="checkbox" id="igstToggle" style="margin-right: 5px;"> Apply IGST instead of CGST + SGST
-    </label>
+    
 
     <button onclick="addItem()" style="margin-top: 15px; padding: 10px 15px; background: green; color: white; border: none; border-radius: 5px;">+ Add Item</button>
     <button onclick="generateBill()" style="margin-top: 15px; padding: 10px 15px; background: blue; color: white; border: none; border-radius: 5px; margin-left: 10px;">Generate Bill</button>
-
+    <label class="screen-only igst-toggle" style="margin-top: 15px; display: block;">
+      <input type="checkbox" id="igstToggle" style="margin-right: 5px;"> Apply IGST instead of CGST + SGST
+    </label>
+    
     <div id="itemContainer" style="margin-top: 20px;"></div>
     <div id="billOutput" style="margin-top: 30px;"></div>
     <div id="printSaveBtns" style="display: none; margin-top: 20px; text-align: center;">
@@ -185,9 +186,9 @@
 
         <table style="width: 100%; margin-top: 20px; font-size: 16px;">
           <tr><td><strong>Taxable Amount</strong></td><td style="text-align: right;">₹${totalTaxable.toFixed(2)}</td></tr>
-          <tr><td>2.5% CGST</td><td style="text-align: right;">₹${useIGST ? '0.00' : totalCGST.toFixed(2)}</td></tr>
-          <tr><td>2.5% SGST</td><td style="text-align: right;">₹${useIGST ? '0.00' : totalSGST.toFixed(2)}</td></tr>
-          <tr><td>5% IGST</td><td style="text-align: right;">₹${useIGST ? totalIGST.toFixed(2) : '0.00'}</td></tr>
+          <tr><td>CGST 2.5% </td><td style="text-align: right;">₹${useIGST ? '0.00' : totalCGST.toFixed(2)}</td></tr>
+          <tr><td>SGST 2.5%</td><td style="text-align: right;">₹${useIGST ? '0.00' : totalSGST.toFixed(2)}</td></tr>
+          <tr><td>IGST 2.5%</td><td style="text-align: right;">₹${useIGST ? totalIGST.toFixed(2) : '0.00'}</td></tr>
           <tr><td>Round Off</td><td style="text-align: right;">${roundSign}₹${Math.abs(roundOff).toFixed(2)}</td></tr>
           <tr><td><strong>Grand Total</strong></td><td style="text-align: right;"><strong>₹${grandTotal.toFixed(2)}</strong></td></tr>
         </table>
