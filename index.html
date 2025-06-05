@@ -5,7 +5,7 @@
   <link href="https://fonts.cdnfonts.com/css/royal-crescent" rel="stylesheet">
   <style>
     @media print {
-      button, input, select {
+      button, input, select, label.igst-toggle {
         display: none !important;
       }
       .print-text {
@@ -13,9 +13,6 @@
       }
       .screen-only {
         display: none;
-      }
-      .no-print {
-        display: none !important;
       }
     }
     .print-text {
@@ -36,20 +33,24 @@
       </p>
     </div>
 
-    <div class="no-print" style="margin-top: 20px; display: flex; justify-content: space-between;">
-      <label>Invoice No:
-        <input type="text" id="invoiceNo" value="" style="padding: 5px;">
+    <div style="margin-top: 20px; display: flex; justify-content: space-between;">
+      <label class="screen-only">Invoice No:
+        <input type="text" id="invoiceNo" style="padding: 5px;">
       </label>
-      <label>Customer:
+      <label class="screen-only">Customer:
         <input type="text" id="customer" value="Cash" style="padding: 5px;">
       </label>
-      <label>Date:
+      <label class="screen-only">Date:
         <input type="date" id="invoiceDate" style="padding: 5px;">
       </label>
     </div>
 
-    <button onclick="addItem()" style="margin-top: 20px; padding: 10px 15px; background: green; color: white; border: none; border-radius: 5px;">+ Add Item</button>
-    <button onclick="generateBill()" style="margin-top: 20px; padding: 10px 15px; background: blue; color: white; border: none; border-radius: 5px; margin-left: 10px;">Generate Bill</button>
+    <label class="screen-only igst-toggle" style="margin-top: 15px; display: block;">
+      <input type="checkbox" id="igstToggle" style="margin-right: 5px;"> Apply IGST instead of CGST + SGST
+    </label>
+
+    <button onclick="addItem()" style="margin-top: 15px; padding: 10px 15px; background: green; color: white; border: none; border-radius: 5px;">+ Add Item</button>
+    <button onclick="generateBill()" style="margin-top: 15px; padding: 10px 15px; background: blue; color: white; border: none; border-radius: 5px; margin-left: 10px;">Generate Bill</button>
 
     <div id="itemContainer" style="margin-top: 20px;"></div>
     <div id="billOutput" style="margin-top: 30px;"></div>
@@ -60,6 +61,7 @@
 
   <script>
     let itemId = 0;
+
     function addItem() {
       const div = document.createElement("div");
       div.style = "margin-bottom: 10px; display: flex; gap: 10px; align-items: center;";
@@ -76,10 +78,27 @@
       document.getElementById("itemContainer").appendChild(div);
     }
 
+    function numberToWords(num) {
+      const a = ['','One','Two','Three','Four','Five','Six','Seven','Eight','Nine','Ten',
+        'Eleven','Twelve','Thirteen','Fourteen','Fifteen','Sixteen','Seventeen','Eighteen','Nineteen'];
+      const b = ['', '', 'Twenty','Thirty','Forty','Fifty','Sixty','Seventy','Eighty','Ninety'];
+
+      function inWords(n) {
+        if (n < 20) return a[n];
+        if (n < 100) return b[Math.floor(n / 10)] + (n % 10 ? ' ' + a[n % 10] : '');
+        if (n < 1000) return a[Math.floor(n / 100)] + ' Hundred' + (n % 100 ? ' and ' + inWords(n % 100) : '');
+        if (n < 100000) return inWords(Math.floor(n / 1000)) + ' Thousand' + (n % 1000 ? ' ' + inWords(n % 1000) : '');
+        return inWords(Math.floor(n / 100000)) + ' Lakh' + (n % 100000 ? ' ' + inWords(n % 100000) : '');
+      }
+
+      return inWords(Math.floor(num)) + ' Rupees Only';
+    }
+
     function generateBill() {
       const invoiceNo = document.getElementById("invoiceNo").value;
       const customer = document.getElementById("customer").value;
       const invoiceDate = document.getElementById("invoiceDate").value;
+      const useIGST = document.getElementById("igstToggle").checked;
 
       const items = document.querySelectorAll("#itemContainer > div");
       const groups = {};
@@ -104,7 +123,7 @@
       }
 
       let rows = '';
-      let totalTaxable = 0, totalCGST = 0, totalSGST = 0, grandTotal = 0;
+      let totalTaxable = 0, totalCGST = 0, totalSGST = 0, totalIGST = 0, grandTotal = 0;
       let srNo = 1;
 
       for (let key in groups) {
@@ -112,8 +131,7 @@
         const rateExcl = +(rateIncl / 1.05).toFixed(2);
         const totalIncl = +(qty * rateIncl).toFixed(2);
         const totalExcl = +(qty * rateExcl).toFixed(2);
-        const cgst = +(totalExcl * 0.025).toFixed(2);
-        const sgst = cgst;
+        const tax = +(totalExcl * 0.05).toFixed(2);
 
         rows += `
           <tr>
@@ -128,14 +146,20 @@
         `;
 
         totalTaxable += totalExcl;
-        totalCGST += cgst;
-        totalSGST += sgst;
+        if (useIGST) {
+          totalIGST += tax;
+        } else {
+          totalCGST += tax / 2;
+          totalSGST += tax / 2;
+        }
         grandTotal += totalIncl;
       }
 
-      const finalComputedTotal = totalTaxable + totalCGST + totalSGST;
+      const finalComputedTotal = totalTaxable + totalCGST + totalSGST + totalIGST;
       const roundOff = +(grandTotal - finalComputedTotal).toFixed(2);
       const roundSign = roundOff >= 0 ? '+' : '-';
+
+      const totalInWords = numberToWords(grandTotal);
 
       const billHTML = `
         <div style="margin-top: 20px; display: flex; justify-content: space-between; font-size: 16px;">
@@ -161,8 +185,9 @@
 
         <table style="width: 100%; margin-top: 20px; font-size: 16px;">
           <tr><td><strong>Taxable Amount</strong></td><td style="text-align: right;">₹${totalTaxable.toFixed(2)}</td></tr>
-          <tr><td>2.5% CGST</td><td style="text-align: right;">₹${totalCGST.toFixed(2)}</td></tr>
-          <tr><td>2.5% SGST</td><td style="text-align: right;">₹${totalSGST.toFixed(2)}</td></tr>
+          <tr><td>2.5% CGST</td><td style="text-align: right;">₹${useIGST ? '0.00' : totalCGST.toFixed(2)}</td></tr>
+          <tr><td>2.5% SGST</td><td style="text-align: right;">₹${useIGST ? '0.00' : totalSGST.toFixed(2)}</td></tr>
+          <tr><td>5% IGST</td><td style="text-align: right;">₹${useIGST ? totalIGST.toFixed(2) : '0.00'}</td></tr>
           <tr><td>Round Off</td><td style="text-align: right;">${roundSign}₹${Math.abs(roundOff).toFixed(2)}</td></tr>
           <tr><td><strong>Grand Total</strong></td><td style="text-align: right;"><strong>₹${grandTotal.toFixed(2)}</strong></td></tr>
         </table>
@@ -172,6 +197,10 @@
           1. No return.<br>
           2. Exchange within 3 days.<br>
           3. No guarantee of fabric, color, cutdana etc work in era of fashion.
+        </p>
+
+        <p style="margin-top: 10px; font-size: 14px;">
+          <strong>Amount in words:</strong> <span style="text-decoration: underline;">${totalInWords}</span>
         </p>
 
         <div style="margin-top: 60px; text-align: right;">
