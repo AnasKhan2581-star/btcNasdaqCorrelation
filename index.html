@@ -188,7 +188,7 @@
           <tr><td><strong>Taxable Amount</strong></td><td style="text-align: right;">₹${totalTaxable.toFixed(2)}</td></tr>
           <tr><td>CGST 2.5% </td><td style="text-align: right;">₹${useIGST ? '0.00' : totalCGST.toFixed(2)}</td></tr>
           <tr><td>SGST 2.5%</td><td style="text-align: right;">₹${useIGST ? '0.00' : totalSGST.toFixed(2)}</td></tr>
-          <tr><td>IGST 2.5%</td><td style="text-align: right;">₹${useIGST ? totalIGST.toFixed(2) : '0.00'}</td></tr>
+          <tr><td>IGST 5%</td><td style="text-align: right;">₹${useIGST ? totalIGST.toFixed(2) : '0.00'}</td></tr>
           <tr><td>Round Off</td><td style="text-align: right;">${roundSign}₹${Math.abs(roundOff).toFixed(2)}</td></tr>
           <tr><td><strong>Grand Total</strong></td><td style="text-align: right;"><strong>₹${grandTotal.toFixed(2)}</strong></td></tr>
         </table>
