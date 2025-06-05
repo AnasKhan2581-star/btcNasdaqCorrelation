@@ -156,11 +156,14 @@
         grandTotal += totalIncl;
       }
 
-      const finalComputedTotal = (totalTaxable + totalCGST + totalSGST + totalIGST);
-      const roundOff = +(grandTotal - finalComputedTotal);
+      const finalComputedTotal = totalTaxable + totalCGST + totalSGST + totalIGST;
+      const roundedGrandTotal = Math.round(finalComputedTotal);
+      const roundOff = +(roundedGrandTotal - finalComputedTotal).toFixed(2);
       const roundSign = roundOff >= 0 ? '+' : '-';
 
-      const totalInWords = numberToWords(grandTotal);
+       const totalInWords = numberToWords(roundedGrandTotal);
+
+
 
       const billHTML = `
         <div style="margin-top: 20px; display: flex; justify-content: space-between; font-size: 16px;">
@@ -190,7 +193,7 @@
           <tr><td>SGST 2.5%</td><td style="text-align: right;">₹${useIGST ? '0.00' : totalSGST.toFixed(2)}</td></tr>
           <tr><td>IGST 5%</td><td style="text-align: right;">₹${useIGST ? totalIGST.toFixed(2) : '0.00'}</td></tr>
           <tr><td>Round Off</td><td style="text-align: right;">${roundSign}₹${Math.abs(roundOff).toFixed(2)}</td></tr>
-          <tr><td><strong>Grand Total</strong></td><td style="text-align: right;"><strong>₹${grandTotal.toFixed(2)}</strong></td></tr>
+          <tr><td><strong>Grand Total</strong></td><td style="text-align: right;"><strong>₹${roundedGrandTotal.toFixed(2)}</strong></td></tr>
         </table>
 
         <p style="margin-top: 30px; font-size: 14px;">
