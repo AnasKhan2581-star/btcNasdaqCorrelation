@@ -132,7 +132,7 @@
         const rateExcl = +(rateIncl / 1.05).toFixed(2);
         const totalIncl = +(qty * rateIncl).toFixed(2);
         const totalExcl = +(qty * rateExcl).toFixed(2);
-        const tax = +(totalExcl * 0.05).toFixed(2);
+      //  const tax = +(totalExcl * 0.05).toFixed(2);
 
         rows += `
           <tr>
@@ -148,15 +148,15 @@
 
         totalTaxable += totalExcl;
         if (useIGST) {
-          totalIGST += tax;
+          totalIGST += totalExcl * 0.05;
         } else {
-          totalCGST += tax / 2;
-          totalSGST += tax / 2;
+          totalCGST += totalExcl * 0.025;
+          totalSGST += totalExcl * 0.025;
         }
         grandTotal += totalIncl;
       }
 
-      const finalComputedTotal = parseFloat(totalTaxable + totalCGST + totalSGST + totalIGST).toFixed(2);
+      const finalComputedTotal = parseFloat(totalTaxable + totalCGST.toFixed(2) + totalSGST.toFixed(2) + totalIGST.toFixed(2));
       const roundOff = +(grandTotal - finalComputedTotal).toFixed(2);
       const roundSign = roundOff >= 0 ? '+' : '-';
 
