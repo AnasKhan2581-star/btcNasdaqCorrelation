@@ -156,7 +156,7 @@
         grandTotal += totalIncl;
       }
 
-      const finalComputedTotal = parseFloat(totalTaxable + totalCGST.toFixed(2) + totalSGST.toFixed(2) + totalIGST.toFixed(2));
+      const finalComputedTotal = parseFloat(totalTaxable + totalCGST + totalSGST + totalIGST);
       const roundOff = +(grandTotal - finalComputedTotal).toFixed(2);
       const roundSign = roundOff >= 0 ? '+' : '-';
 
