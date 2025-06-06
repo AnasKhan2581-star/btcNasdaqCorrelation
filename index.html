@@ -129,8 +129,8 @@
 
       for (let key in groups) {
         const { product, hsn, unit, qty, rateIncl } = groups[key];
-        const rateExcl = +parseFloat((rateIncl / 1.05).toFixed(2));
-        const totalIncl = +parseFloat((qty * rateIncl).toFixed(2));
+        const rateExcl = +(rateIncl / 1.05).toFixed(2);
+        const totalIncl = +(qty * rateIncl).toFixed(2);
         const totalExcl = +(qty * rateExcl).toFixed(2);
       //  const tax = +(totalExcl * 0.05).toFixed(2);
 
