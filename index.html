@@ -130,7 +130,7 @@
       for (let key in groups) {
         const { product, hsn, unit, qty, rateIncl } = groups[key];
         const rateExcl = +parseFloat((rateIncl / 1.05).toFixed(2));
-        const totalIncl = +(qty * rateIncl).toFixed(2);
+        const totalIncl = +parseFloat((qty * rateIncl).toFixed(2));
         const totalExcl = +(qty * rateExcl).toFixed(2);
       //  const tax = +(totalExcl * 0.05).toFixed(2);
 
@@ -148,10 +148,10 @@
 
         totalTaxable += totalExcl;
         if (useIGST) {
-          totalIGST += totalExcl * 0.05;
+          totalIGST += (totalExcl * 0.05).toFixed(2);
         } else {
-          totalCGST += totalExcl * 0.025;
-          totalSGST += totalExcl * 0.025;
+          totalCGST += (totalExcl * 0.025).toFixed(2);
+          totalSGST += (totalExcl * 0.025).toFixed(2);
         }
         grandTotal += totalIncl;
       }
