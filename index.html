@@ -148,21 +148,21 @@
 
         totalTaxable += totalExcl;
         if (useIGST) {
-          totalIGST += (totalExcl * 0.05).toFixed(2);
+          totalIGST += totalExcl * 0.05;
         } else {
-          totalCGST += (totalExcl * 0.025).toFixed(2);
-          totalSGST += (totalExcl * 0.025).toFixed(2);
+          totalCGST += totalExcl * 0.025;
+          totalSGST += totalExcl * 0.025;
         }
         grandTotal += totalIncl;
       }
 
-      const finalComputedTotal = (totalTaxable + totalCGST + totalSGST + totalIGST);
+      // FIXED ROUND OFF BUG: use numbers, not strings, in calculation
+      const finalComputedTotal = totalTaxable + totalCGST + totalSGST + totalIGST;
       const roundOff = +(grandTotal - finalComputedTotal).toFixed(2);
+
       const roundSign = roundOff >= 0 ? '+' : '-';
 
-       const totalInWords = numberToWords(grandTotal);
-
-
+      const totalInWords = numberToWords(grandTotal);
 
       const billHTML = `
         <div style="margin-top: 20px; display: flex; justify-content: space-between; font-size: 16px;">
