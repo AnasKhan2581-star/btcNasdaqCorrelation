@@ -20,8 +20,8 @@
     }
   </style>
 </head>
-<body style="font-family: Arial; padding: 20px; background: #f5f5f5;">
-  <div style="max-width: 900px; margin: auto; background: white; padding: 20px; border-radius: 10px;">
+<body style="font-family: Arial; padding: 32px; background: #f5f5f5;">
+  <div style="max-width: 980px; margin: 40px auto; background: white; padding: 32px; border-radius: 14px;">
     <div style="text-align: center;">
       <h2 style="font-family: 'Royal Crescent', cursive; font-size: 48px; margin: 0;">ZARDOZ</h2>
       <p style="margin: 5px 0; font-size: 16px;">
@@ -33,64 +33,66 @@
       </p>
     </div>
 
-    <div style="margin-top: 20px; display: flex; justify-content: space-between;">
+    <div style="margin-top: 24px; display: flex; justify-content: space-between;">
       <label class="screen-only">Invoice No:
         <input type="text" id="invoiceNo" style="padding: 5px;">
       </label>
-   <span id="customer-billto-wrapper" style="display: flex; align-items: center;">
-  <label class="screen-only" id="customer-label" style="margin-right: 8px;">Customer:
-    <input type="text" id="customer" value="Cash" style="padding: 5px;">
-  </label>
-  <label class="screen-only" for="w-checkbox" style="margin: 0 6px 0 0; font-weight:bold;">W</label>
-  <input type="checkbox" id="w-checkbox" onclick="toggleBillTo()" style="margin-right: 8px;">
-</span>
+      <span id="customer-billto-wrapper" style="display: flex; align-items: center;">
+        <label class="screen-only" id="customer-label" style="margin-right: 8px;">Customer:
+          <input type="text" id="customer" value="Cash" style="padding: 5px;">
+        </label>
+        <label class="screen-only" for="w-checkbox" style="margin: 0 6px 0 0; font-weight:bold;">W</label>
+        <input type="checkbox" id="w-checkbox" onclick="toggleBillTo()" style="margin-right: 8px;">
+      </span>
 
-<!-- Bill To Section (hidden by default) -->
-<div id="billto-section" class="screen-only" style="display:none; margin-right: 8px;">
-  <div style="background: #f8f9fa; border: 1px solid #ddd; border-radius: 8px; padding: 15px; margin-top: 10px; min-width: 320px;">
-    <div style="display: flex; flex-wrap: wrap; gap: 12px;">
-      <div style="flex: 1 1 45%;">
-        <label style="font-weight: bold;">Name</label>
-        <input type="text" id="billto-name" style="padding:8px; width: 100%; border-radius: 4px; border: 1px solid #bbb;">
+      <!-- Bill To Section (hidden by default) -->
+      <div id="billto-section" class="screen-only" style="display:none; margin-right: 8px;">
+        <div style="background: #f8f9fa; border: 1px solid #ddd; border-radius: 8px; padding: 15px; margin-top: 10px; min-width: 320px;">
+          <div style="display: flex; flex-wrap: wrap; gap: 12px;">
+            <div style="flex: 1 1 45%;">
+              <label style="font-weight: bold;">Name</label>
+              <input type="text" id="billto-name" style="padding:8px; width: 100%; border-radius: 4px; border: 1px solid #bbb;">
+            </div>
+            <div style="flex: 1 1 100%;">
+              <label style="font-weight: bold;">Address</label>
+              <input type="text" id="billto-address" style="padding:8px; width: 100%; border-radius: 4px; border: 1px solid #bbb;">
+            </div>
+            <div style="flex: 1 1 45%;">
+              <label style="font-weight: bold;">State</label>
+              <input type="text" id="billto-state" style="padding:8px; width: 100%; border-radius: 4px; border: 1px solid #bbb;">
+            </div>
+            <div style="flex: 1 1 45%;">
+              <label style="font-weight: bold;">State Code</label>
+              <input type="text" id="billto-statecode" style="padding:8px; width: 100%; border-radius: 4px; border: 1px solid #bbb;">
+            </div>
+            <div style="flex: 1 1 100%;">
+              <label style="font-weight: bold;">GSTIN/UDIN</label>
+              <input type="text" id="billto-gstin" style="padding:8px; width: 100%; border-radius: 4px; border: 1px solid #bbb;">
+            </div>
+          </div>
+        </div>
       </div>
-      <div style="flex: 1 1 100%;">
-        <label style="font-weight: bold;">Address</label>
-        <input type="text" id="billto-address" style="padding:8px; width: 100%; border-radius: 4px; border: 1px solid #bbb;">
-      </div>
-      <div style="flex: 1 1 45%;">
-        <label style="font-weight: bold;">State</label>
-        <input type="text" id="billto-state" style="padding:8px; width: 100%; border-radius: 4px; border: 1px solid #bbb;">
-      </div>
-      <div style="flex: 1 1 45%;">
-        <label style="font-weight: bold;">State Code</label>
-        <input type="text" id="billto-statecode" style="padding:8px; width: 100%; border-radius: 4px; border: 1px solid #bbb;">
-      </div>
-      <div style="flex: 1 1 100%;">
-        <label style="font-weight: bold;">GSTIN/UDIN</label>
-        <input type="text" id="billto-gstin" style="padding:8px; width: 100%; border-radius: 4px; border: 1px solid #bbb;">
-      </div>
-    </div>
-  </div>
-</div>
       <label class="screen-only">Date:
         <input type="date" id="invoiceDate" style="padding: 5px;">
       </label>
     </div>
-    
 
-    <button onclick="addItem()" style="margin-top: 15px; padding: 10px 15px; background: green; color: white; border: none; border-radius: 5px;">+ Add Item</button>
-    <button onclick="generateBill()" style="margin-top: 15px; padding: 10px 15px; background: blue; color: white; border: none; border-radius: 5px; margin-left: 10px;">Generate Bill</button>
-    <label class="screen-only igst-toggle" style="margin-top: 15px; display: block;">
+    <button onclick="addItem()" style="margin-top: 18px; padding: 10px 15px; background: green; color: white; border: none; border-radius: 5px;">+ Add Item</button>
+    <button onclick="generateBill()" style="margin-top: 18px; padding: 10px 15px; background: blue; color: white; border: none; border-radius: 5px; margin-left: 10px;">Generate Bill</button>
+    <label class="screen-only igst-toggle" style="margin-top: 18px; display: block;">
       <input type="checkbox" id="igstToggle" style="margin-right: 5px;"> Apply IGST instead of CGST + SGST
     </label>
-    
-    <div id="itemContainer" style="margin-top: 20px;"></div>
-    <div id="billOutput" style="margin-top: 30px;"></div>
-    <div id="printSaveBtns" style="display: none; margin-top: 20px; text-align: center;">
+
+    <div id="itemContainer" style="margin-top: 28px;"></div>
+    <div id="billOutput" style="margin-top: 40px;"></div>
+    <div id="printSaveBtns" style="display: none; margin-top: 30px; text-align: center;">
       <button onclick="window.print()" style="padding: 10px 20px; background: #555; color: white; border: none; border-radius: 5px;">Print / Save as PDF</button>
+      <button onclick="shareBill()" style="padding: 10px 20px; background: #f57c00; color: white; border: none; border-radius: 5px; margin-left: 12px;">Share Bill</button>
     </div>
   </div>
 
+  <!-- jsPDF CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script>
     let itemId = 0;
 
@@ -273,10 +275,63 @@
       document.getElementById("billOutput").innerHTML = billHTML;
       document.getElementById("printSaveBtns").style.display = "block";
     }
+
     function toggleBillTo() {
       var isChecked = document.getElementById("w-checkbox").checked;
       document.getElementById("customer-label").style.display = isChecked ? "none" : "";
       document.getElementById("billto-section").style.display = isChecked ? "" : "none";
+    }
+
+    async function shareBill() {
+      // Get bill HTML
+      const billDiv = document.getElementById("billOutput");
+      if (!billDiv.innerHTML.trim()) {
+        alert("Please generate the bill first.");
+        return;
+      }
+
+      // Generate a PDF using jsPDF
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF('p', 'pt', 'a4');
+      // Convert HTML to text (for best cross-device compatibility)
+      // You can use html2canvas for better rendering if you want.
+      doc.html(billDiv, {
+        callback: async function (doc) {
+          const pdfBlob = doc.output('blob');
+          const file = new File([pdfBlob], 'Bill.pdf', { type: 'application/pdf' });
+
+          if (navigator.canShare && navigator.canShare({ files: [file] })) {
+            try {
+              await navigator.share({
+                title: 'Bill',
+                text: 'Here is your generated bill.',
+                files: [file]
+              });
+            } catch (err) {
+              // User cancelled or sharing failed
+            }
+          } else {
+            // Fallback: Download the file if sharing not supported
+            const url = URL.createObjectURL(pdfBlob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = "Bill.pdf";
+            document.body.appendChild(a);
+            a.click();
+            setTimeout(() => {
+              URL.revokeObjectURL(url);
+              document.body.removeChild(a);
+            }, 0);
+            alert('Sharing is not supported on this device. The bill PDF has been downloaded instead.');
+          }
+        },
+        margin: [20, 20, 20, 20],
+        autoPaging: true,
+        x: 0,
+        y: 0,
+        width: 550,
+        windowWidth: 800
+      });
     }
   </script>
 </body>
