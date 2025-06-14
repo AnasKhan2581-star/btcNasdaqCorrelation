@@ -151,6 +151,12 @@
         customer = document.getElementById("customer").value;
       }
       const invoiceDate = document.getElementById("invoiceDate").value;
+      // Format the date as DD MM YYYY
+      let formattedDate = invoiceDate;
+      if (invoiceDate) {
+        const [yyyy, mm, dd] = invoiceDate.split('-');
+        formattedDate = `${dd} ${mm} ${yyyy}`;
+      }
       const useIGST = document.getElementById("igstToggle").checked;
 
       const items = document.querySelectorAll("#itemContainer > div");
@@ -218,7 +224,7 @@
       const billHTML = `
         <div style="margin-top: 20px; display: flex; justify-content: space-between; font-size: 16px;">
           <strong>Invoice No: ${invoiceNo}</strong>
-          <strong>Date: ${invoiceDate}</strong>
+          <strong>Date: ${formattedDate}</strong>
         </div>
         ${billToHTML || `<strong>Customer: ${customer}</strong>`}
 
