@@ -5,6 +5,14 @@
   <link href="https://fonts.cdnfonts.com/css/royal-crescent" rel="stylesheet">
   <style>
     @media print {
+      body {
+        padding: 0 !important;
+      }
+      .print-container {
+        margin: 16px auto !important;
+        padding: 8px !important;
+        box-shadow: none !important;
+      }
       button, input, select, label.igst-toggle {
         display: none !important;
       }
@@ -25,7 +33,7 @@
   </style>
 </head>
 <body style="font-family: Arial; padding: 32px; background: #f5f5f5;">
-  <div style="max-width: 980px; margin: 40px auto; background: white; padding: 32px; border-radius: 14px;">
+  <div class="print-container" style="max-width: 980px; margin: 40px auto; background: white; padding: 32px; border-radius: 14px;">
     <div style="text-align: center;">
       <h2 style="font-family: 'Royal Crescent', cursive; font-size: 48px; margin: 0;">ZARDOZ</h2>
       <p style="margin: 5px 0; font-size: 16px;">
