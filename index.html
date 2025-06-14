@@ -18,6 +18,10 @@
     .print-text {
       display: none;
     }
+    /* Fix for print button always visible when needed */
+    #printSaveBtns {
+      display: block !important;
+    }
   </style>
 </head>
 <body style="font-family: Arial; padding: 32px; background: #f5f5f5;">
@@ -283,19 +287,16 @@
     }
 
     async function shareBill() {
-      // Get bill HTML
       const billDiv = document.getElementById("billOutput");
       if (!billDiv.innerHTML.trim()) {
         alert("Please generate the bill first.");
         return;
       }
 
-      // Generate a PDF using jsPDF
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF('p', 'pt', 'a4');
-      // Convert HTML to text (for best cross-device compatibility)
-      // You can use html2canvas for better rendering if you want.
-      doc.html(billDiv, {
+
+      await doc.html(billDiv, {
         callback: async function (doc) {
           const pdfBlob = doc.output('blob');
           const file = new File([pdfBlob], 'Bill.pdf', { type: 'application/pdf' });
@@ -311,18 +312,23 @@
               // User cancelled or sharing failed
             }
           } else {
-            // Fallback: Download the file if sharing not supported
+            // Fallback: Download AND prompt open
             const url = URL.createObjectURL(pdfBlob);
             const a = document.createElement("a");
             a.href = url;
             a.download = "Bill.pdf";
+            a.style.display = "none";
             document.body.appendChild(a);
             a.click();
             setTimeout(() => {
               URL.revokeObjectURL(url);
               document.body.removeChild(a);
-            }, 0);
-            alert('Sharing is not supported on this device. The bill PDF has been downloaded instead.');
+              // For Android, prompt user to open with another app (like Noko Print)
+              if (window.AndroidOpenFile) {
+                window.AndroidOpenFile.open('Bill.pdf');
+              }
+            }, 500);
+            alert('Sharing is not supported on this device. The bill PDF has been downloaded. Open it with Noko Print or any print app.');
           }
         },
         margin: [20, 20, 20, 20],
