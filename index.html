@@ -37,9 +37,22 @@
       <label class="screen-only">Invoice No:
         <input type="text" id="invoiceNo" style="padding: 5px;">
       </label>
-      <label class="screen-only">Customer:
-        <input type="text" id="customer" value="Cash" style="padding: 5px;">
-      </label>
+   <span id="customer-billto-wrapper" style="display: flex; align-items: center;">
+  <label class="screen-only" id="customer-label" style="margin-right: 8px;">Customer:
+    <input type="text" id="customer" value="Cash" style="padding: 5px;">
+  </label>
+  <label class="screen-only" for="w-checkbox" style="margin: 0 6px 0 0; font-weight:bold;">W</label>
+  <input type="checkbox" id="w-checkbox" onclick="toggleBillTo()" style="margin-right: 8px;">
+</span>
+
+<!-- Bill To Section (hidden by default) -->
+<div id="billto-section" class="screen-only" style="display:none; margin-right: 8px;">
+  <label>Name: <input type="text" id="billto-name" style="padding:5px;"></label>
+  <label>Address: <input type="text" id="billto-address" style="padding:5px;"></label>
+  <label>State: <input type="text" id="billto-state" style="padding:5px;"></label>
+  <label>State Code: <input type="text" id="billto-statecode" style="padding:5px;"></label>
+  <label>GSTIN/UDIN: <input type="text" id="billto-gstin" style="padding:5px;"></label>
+</div>
       <label class="screen-only">Date:
         <input type="date" id="invoiceDate" style="padding: 5px;">
       </label>
@@ -97,7 +110,18 @@
 
     function generateBill() {
       const invoiceNo = document.getElementById("invoiceNo").value;
-      const customer = document.getElementById("customer").value;
+      const useBillTo = document.getElementById("w-checkbox").checked;
+      let customer;
+      if (useBillTo) {
+  const name = document.getElementById("billto-name").value;
+  const address = document.getElementById("billto-address").value;
+  const state = document.getElementById("billto-state").value;
+  const stateCode = document.getElementById("billto-statecode").value;
+  const gstin = document.getElementById("billto-gstin").value;
+  customer = `${name}, ${address}, ${state}, ${stateCode}, ${gstin}`;
+} else {
+  customer = document.getElementById("customer").value;
+}
       const invoiceDate = document.getElementById("invoiceDate").value;
       const useIGST = document.getElementById("igstToggle").checked;
 
@@ -215,6 +239,11 @@
 
       document.getElementById("billOutput").innerHTML = billHTML;
       document.getElementById("printSaveBtns").style.display = "block";
+    }
+    function toggleBillTo() {
+  var isChecked = document.getElementById("w-checkbox").checked;
+  document.getElementById("customer-label").style.display = isChecked ? "none" : "";
+  document.getElementById("billto-section").style.display = isChecked ? "" : "none";
     }
   </script>
 </body>
